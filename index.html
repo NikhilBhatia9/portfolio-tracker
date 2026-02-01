@@ -2262,7 +2262,12 @@ const loadState = async () => {
             }
 
             function setFilter(status) {
-                appState.filterStatus = status;
+                // Toggle filter: if clicking the same filter, reset to 'all'
+                if (appState.filterStatus === status && status !== 'all') {
+                    appState.filterStatus = 'all';
+                } else {
+                    appState.filterStatus = status;
+                }
                 render();
             }
 
