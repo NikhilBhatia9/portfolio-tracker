@@ -1108,8 +1108,8 @@
 // ====================================
 // 🔧 STEP 1: Replace these with your Supabase project credentials
 // Get them from: Supabase Dashboard → Settings → API
-const SUPABASE_URL = 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = 'your-anon-key-here';
+const SUPABASE_URL = 'https://kkqysoquhqoiwqoyphwp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrcXlzb3F1aHFvaXdxb3lwaHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjgzMjIsImV4cCI6MjA4NTU0NDMyMn0.YJl8sVng8S6TruNf-46DJiOV7U06MuLicPCaQw7LvPc';
 
 // Initialize Supabase client
 let supabaseClient = null;
@@ -1174,8 +1174,8 @@ async function initializeProduction() {
     updateProductionStatus('initializing');
     
     // Check if Supabase is configured
-    if (SUPABASE_URL === 'https://your-project.supabase.co' || 
-        SUPABASE_ANON_KEY === 'your-anon-key-here') {
+    if (SUPABASE_URL === 'https://kkqysoquhqoiwqoyphwp.supabase.co' || 
+        SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrcXlzb3F1aHFvaXdxb3lwaHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjgzMjIsImV4cCI6MjA4NTU0NDMyMn0.YJl8sVng8S6TruNf-46DJiOV7U06MuLicPCaQw7LvPc') {
         
         console.warn('⚠️ Supabase credentials not configured');
         updateProductionStatus('local');
