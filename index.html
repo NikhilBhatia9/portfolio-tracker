@@ -1,0 +1,3396 @@
+<!DOCTYPE html>
+<!-- Version: 1.2.0 - Production Ready (Supabase + Active Filter Fix) -->
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Tracker | Platform Development & Integration</title>
+    
+    <!-- Supabase JS Client - Required for cloud storage -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* CSS Variables */
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --bg-hover: #475569;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-color: #0ea5e9;
+            --accent-glow: rgba(14, 165, 233, 0.5);
+            --success-color: #22c55e;
+            --warning-color: #eab308;
+            --danger-color: #ef4444;
+            --risk-color: #f97316;
+            --border-color: #475569;
+            --radius-md: 8px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Layout & Components */
+        .app-shell {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 100px;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 100;
+        }
+
+        .nav-item {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem 0;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: all 0.3s;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            gap: 0.5rem;
+        }
+
+        .nav-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item.active {
+            color: var(--accent-color);
+            background: rgba(14, 165, 233, 0.1);
+            border-left-color: var(--accent-color);
+        }
+
+        .nav-icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .app-container {
+            flex: 1;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 100%;
+            overflow-y: auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+        }
+
+        .btn {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover {
+            background: var(--bg-hover);
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+        }
+
+        /* Dashboard Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-card h3 {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-card .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        .metric-card.clickable {
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+        }
+
+        .metric-card.clickable:hover {
+            transform: translateY(-2px);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .metric-card.active {
+            background-color: rgba(14, 165, 233, 0.1);
+            border-color: var(--accent-color);
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        th.sortable:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        th.sortable::after {
+            content: '↕';
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+            color: var(--text-muted);
+            opacity: 0.3;
+        }
+
+        th.sortable.asc::after {
+            content: '↑';
+            opacity: 1;
+            color: var(--accent-color);
+        }
+
+        th.sortable.desc::after {
+            content: '↓';
+            opacity: 1;
+            color: var(--accent-color);
+        }
+
+        tr.clickable:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        tr.key-initiative {
+            border-left: 4px solid var(--warning-color);
+            background: linear-gradient(90deg, rgba(234, 179, 8, 0.05) 0%, transparent 100%);
+        }
+
+        tr.key-initiative:hover {
+            background: linear-gradient(90deg, rgba(234, 179, 8, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            border: 1px solid transparent;
+        }
+
+        .badge.active {
+            background: rgba(14, 165, 233, 0.2);
+            color: var(--accent-color);
+            border-color: rgba(14, 165, 233, 0.3);
+        }
+
+        .badge.completed {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success-color);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .badge.risk {
+            background: rgba(249, 115, 22, 0.2);
+            color: var(--risk-color);
+            border-color: rgba(249, 115, 22, 0.3);
+        }
+
+        .badge.planned {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-secondary);
+            border-color: rgba(148, 163, 184, 0.3);
+        }
+
+        /* Tags */
+        .tag-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            display: inline-block;
+            margin-right: 4px;
+            margin-top: 4px;
+        }
+
+        /* Timeline */
+        .timeline-container {
+            position: relative;
+            margin-top: 1rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            user-select: none;
+        }
+
+        .timeline-axis {
+            position: relative;
+            height: 24px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            min-width: 800px;
+            margin-left: 150px;
+            width: calc(100% - 150px);
+        }
+
+        .timeline-row {
+            position: relative;
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            min-width: 800px;
+        }
+
+        .timeline-label {
+            width: 150px;
+            flex-shrink: 0;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 1rem;
+            position: sticky;
+            left: 0;
+            background: var(--bg-secondary);
+            z-index: 10;
+        }
+
+        .timeline-track {
+            flex-grow: 1;
+            min-height: 30px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            transition: height 0.2s ease;
+        }
+
+        .timeline-bar {
+            position: absolute;
+            height: 20px;
+            border-radius: 4px;
+            opacity: 0.8;
+            z-index: 5;
+        }
+
+        .timeline-bar:hover {
+            opacity: 1;
+            z-index: 10;
+            cursor: grab;
+        }
+
+        .timeline-bar.dragging {
+            opacity: 0.9;
+            z-index: 20;
+            cursor: grabbing;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transform: scale(1.02);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-content {
+            width: 800px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        input,
+        select {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+
+        input:focus,
+        select:focus {
+            outline: 2px solid var(--accent-color);
+            border-color: transparent;
+        }
+
+        input[type="color"] {
+            padding: 0;
+            width: 40px;
+            height: 38px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Category Pills */
+        .category-pills {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .category-pill {
+            padding: 0.4rem 0.8rem;
+            border-radius: 99px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .category-pill:hover {
+            border-color: var(--accent-color);
+            color: var(--text-primary);
+        }
+
+        .category-pill.active {
+            background: rgba(14, 165, 233, 0.2);
+            border-color: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.2);
+        }
+
+        .category-pill .count {
+            background: var(--bg-card);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Multi-Select Tags/Categories */
+        .multi-select-container {
+            position: relative;
+            width: 100%;
+        }
+
+        .selected-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            padding: 0.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            min-height: 42px;
+            cursor: text;
+        }
+
+        .selected-items:focus-within {
+            outline: 2px solid var(--accent-color);
+            border-color: transparent;
+        }
+
+        .selected-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(14, 165, 233, 0.2);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-primary);
+        }
+
+        .selected-item .remove {
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: bold;
+            padding: 0 0.25rem;
+        }
+
+        .selected-item .remove:hover {
+            color: var(--risk-color);
+        }
+
+        .multi-select-input {
+            flex: 1;
+            min-width: 120px;
+            border: none;
+            background: transparent;
+            color: var(--text-primary);
+            outline: none;
+            padding: 0.25rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+        }
+
+        .multi-select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 200px;
+            overflow-y: auto;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-top: 0.25rem;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .multi-select-option {
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.875rem;
+        }
+
+        .multi-select-option:hover {
+            background: var(--bg-hover);
+        }
+
+        .multi-select-option.selected {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--accent-color);
+        }
+
+        /* Date Input Styling */
+        input[type="date"] {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        input[type="date"]:hover {
+            border-color: var(--accent-color);
+        }
+
+        input[type="date"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            cursor: pointer;
+            filter: invert(0.7);
+        }
+
+        .phase-input {
+            box-sizing: border-box;
+            width: 100%;
+        }
+        
+        table td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        table select {
+            box-sizing: border-box;
+        }
+        
+        input[type="date"].error {
+            border-color: var(--danger-color);
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Phase date labels */
+        .phase-date-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: block;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
+
+        /* ========== PRODUCTION STYLES ========== */
+        .production-banner {
+            background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .storage-indicator {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            font-size: 0.85rem;
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .storage-indicator:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        }
+
+        .status-pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success-color);
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 8px currentColor;
+        }
+
+        .status-pulse.warning {
+            background: var(--warning-color);
+        }
+
+        .status-pulse.error {
+            background: var(--danger-color);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+        }
+
+        .production-banner.local {
+            background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%);
+        }
+
+        .production-banner.error {
+            background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+        }
+    </style>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+    <!-- Production Status Banner -->
+    <div class="production-banner" id="production-status">
+        <span id="status-icon">☁️</span>
+        <span id="status-text">Initializing...</span>
+    </div>
+
+    <!-- Storage Status Indicator -->
+    <div class="storage-indicator" id="storage-indicator">
+        <div class="status-pulse" id="status-pulse"></div>
+        <span id="storage-text">Checking connection...</span>
+    </div>
+
+    <div class="app-shell">
+        <nav class="sidebar">
+            <div class="nav-item active" id="btn-view-current" onclick="switchView('current')" title="Dashboard">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                </svg>
+                <span style="font-size: 0.7rem; font-weight: 500;">Dashboard</span>
+            </div>
+            <div class="nav-item" id="btn-view-timeline" onclick="switchView('timeline')" title="Timeline">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                </svg>
+                <span style="font-size: 0.7rem; font-weight: 500;">Timeline</span>
+            </div>
+            <div class="nav-item" id="btn-view-snapshots" onclick="switchView('snapshots')" title="History">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                </svg>
+                <span style="font-size: 0.7rem; font-weight: 500;">History</span>
+            </div>
+            <div style="flex-grow: 1;"></div>
+            <div class="nav-item" id="btn-settings-sidebar" onclick="openSettings()" title="Settings">
+                <svg class="nav-icon" viewBox="0 0 24 24">
+                    <path
+                        d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+                </svg>
+                <span style="font-size: 0.7rem; font-weight: 500;">Data</span>
+            </div>
+        </nav>
+
+        <div class="app-container">
+            <header>
+                <h1
+                    style="background: linear-gradient(to right, var(--text-primary), var(--accent-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                    Portfolio Tracker | Platform Development & Integration</h1>
+            </header>
+
+            <!-- Current View -->
+            <div id="view-current">
+                <!-- Category Filters -->
+                <div class="category-pills" id="category-filters"
+                    style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <!-- Pills injected by JS -->
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="card metric-card clickable" id="filter-all" onclick="setFilter('all')">
+                        <h3>Total Initiatives</h3>
+                        <div class="value" id="m-total">0</div>
+                    </div>
+                    <div class="card metric-card clickable" id="filter-completed"
+                        style="border-top: 3px solid var(--success-color)" onclick="setFilter('completed')">
+                        <h3>Completed</h3>
+                        <div class="value" style="color:var(--success-color)" id="m-completed">0</div>
+                    </div>
+                    <div class="card metric-card clickable" id="filter-active"
+                        style="border-top: 3px solid var(--accent-color)" onclick="setFilter('active')">
+                        <h3>Active</h3>
+                        <div class="value" style="color:var(--accent-color)" id="m-active">0</div>
+                    </div>
+                    <div class="card metric-card clickable" id="filter-risk"
+                        style="border-top: 3px solid var(--risk-color)" onclick="setFilter('risk')">
+                        <h3>At Risk</h3>
+                        <div class="value" style="color:var(--risk-color)" id="m-risk">0</div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 2rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2>Initiative Status</h2>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">Click a row to edit details</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="sortable" id="header-id" onclick="sortBy('id')">Key</th>
+                                <th class="sortable" id="header-name" onclick="sortBy('name')">Name</th>
+                                <th class="sortable" id="header-owner" onclick="sortBy('owner')">Owner</th>
+                                <th class="sortable" id="header-keyInitiative" onclick="sortBy('keyInitiative')">Key
+                                    Initiative</th>
+                                <th class="sortable" id="header-targetDate" onclick="sortBy('targetDate')">Target Date
+                                </th>
+                                <th class="sortable" id="header-status" onclick="sortBy('status')">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body"></tbody>
+                    </table>
+                    <div style="margin-top: 1rem; text-align: center;">
+                        <button class="btn btn-primary hidden" onclick="seedData()" id="btn-seed">Seed Demo
+                            Data</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Timeline View -->
+            <div id="view-timeline" class="hidden" style="margin-top: 2rem;">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                        <h2>Timeline</h2>
+                        <button class="btn btn-danger" style="font-size:0.7rem; padding:4px 8px;"
+                            onclick="clearTimelineFilters()">Reset Filters</button>
+                    </div>
+
+                    <!-- Timeline Filters -->
+                    <div class="form-grid"
+                        style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Name</label>
+                            <input type="text" id="filter-tl-name" placeholder="Filter Name..."
+                                style="font-size: 0.8rem; padding: 4px;"
+                                oninput="updateTimelineFilters('name', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Key</label>
+                            <input type="text" id="filter-tl-key" placeholder="Filter Key..."
+                                style="font-size: 0.8rem; padding: 4px;"
+                                oninput="updateTimelineFilters('key', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Owner</label>
+                            <input type="text" id="filter-tl-owner" placeholder="Filter Owner..."
+                                style="font-size: 0.8rem; padding: 4px;"
+                                oninput="updateTimelineFilters('owner', this.value)">
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Status</label>
+                            <select id="filter-tl-status" style="font-size: 0.8rem; padding: 4px;"
+                                onchange="updateTimelineFilters('status', this.value)">
+                                <option value="all">All</option>
+                                <option value="planned">Planned</option>
+                                <option value="active">Active</option>
+                                <option value="risk">Risk</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Before Date</label>
+                            <input type="date" id="filter-tl-date" style="font-size: 0.8rem; padding: 4px;"
+                                onchange="updateTimelineFilters('targetDate', this.value)">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:0.5rem; font-size:0.8rem; color:var(--text-muted);">Tip: Drag phases to
+                        reschedule. Click empty space to add new.</div>
+                    <div class="timeline-container">
+                        <div class="timeline-axis" id="timeline-axis"></div>
+                        <div id="timeline-rows"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Snapshots View -->
+            <div id="view-snapshots" class="hidden">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; margin-bottom: 1rem;">
+                        <h2>History</h2>
+                        <div style="display:flex; gap:0.5rem;">
+                            <input type="text" id="snap-note" placeholder="Snapshot Note"
+                                style="background:var(--bg-primary); border:1px solid var(--border-color); color:white; padding:0.5rem; border-radius:4px;">
+                            <button class="btn btn-primary" onclick="takeSnapshot()">Take Snapshot</button>
+                        </div>
+                    </div>
+                    <div id="snapshot-list" style="display:flex; gap:0.5rem; flex-wrap:wrap;"></div>
+                </div>
+
+                <div id="snapshot-preview" class="card hidden"
+                    style="margin-top:2rem; border: 2px dashed var(--accent-color);">
+                    <h3 style="color: var(--accent-color)">Snapshot Preview</h3>
+                    <p id="preview-meta" style="color: var(--text-secondary); margin-bottom: 1rem;"></p>
+
+                    <div class="metrics-grid">
+                        <div class="card metric-card">
+                            <h3>Total</h3>
+                            <div class="value" id="s-total">-</div>
+                        </div>
+                        <div class="card metric-card">
+                            <h3>Completed</h3>
+                            <div class="value" id="s-completed">-</div>
+                        </div>
+                        <div class="card metric-card">
+                            <h3>Active</h3>
+                            <div class="value" id="s-active">-</div>
+                        </div>
+                        <div class="card metric-card">
+                            <h3>Risk</h3>
+                            <div class="value" id="s-risk">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Historical Data Table -->
+                    <div style="margin-top: 2rem;">
+                        <h3>Snapshot Data Details</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Phases & Dates</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="snapshot-table-body"></tbody>
+                        </table>
+                    </div>
+
+                    <!-- Historical Timeline -->
+                    <div style="margin-top: 2rem;">
+                        <h3>Snapshot Timeline</h3>
+                        <div class="timeline-container">
+                            <div class="timeline-axis" id="snapshot-timeline-axis"></div>
+                            <div id="snapshot-timeline-rows"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal -->
+        <div id="modal-wrapper" class="modal-overlay hidden">
+            <div class="modal-content card">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Initiative Details</h2>
+                    <button class="btn" onclick="closeModal()">✕</button>
+                </div>
+
+                <!-- Editable Fields -->
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" id="edit-name">
+                    </div>
+                    <div class="form-group">
+                        <label>Owner</label>
+                        <input type="text" id="edit-owner">
+                    </div>
+                    <div class="form-group">
+                        <label>Start Date</label>
+                        <input type="date" id="edit-start">
+                    </div>
+                    <div class="form-group">
+                        <label>Target Date</label>
+                        <input type="date" id="edit-target">
+                    </div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select id="edit-status">
+                            <option value="planned">Planned</option>
+                            <option value="active">Active</option>
+                            <option value="risk">Risk</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Categories</label>
+                        <div class="multi-select-container" id="categories-multiselect">
+                            <div class="selected-items" onclick="focusCategoriesInput()">
+                                <input type="text" class="multi-select-input" id="categories-input"
+                                    placeholder="Type to add or select..."
+                                    oninput="filterCategoriesDropdown(this.value)"
+                                    onkeydown="handleCategoriesKeydown(event)" onfocus="showCategoriesDropdown()"
+                                    onblur="hideCategoriesDropdown()">
+                            </div>
+                            <div class="multi-select-dropdown hidden" id="categories-dropdown"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="multi-select-container" id="tags-multiselect">
+                            <div class="selected-items" onclick="focusTagsInput()">
+                                <input type="text" class="multi-select-input" id="tags-input"
+                                    placeholder="Type to add or select..." oninput="filterTagsDropdown(this.value)"
+                                    onkeydown="handleTagsKeydown(event)" onfocus="showTagsDropdown()"
+                                    onblur="hideTagsDropdown()">
+                            </div>
+                            <div class="multi-select-dropdown hidden" id="tags-dropdown"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr style="border-color: var(--border-color); width: 100%;">
+
+                <!-- Phases -->
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3>Project Phases</h3>
+                    <button class="btn btn-sm btn-primary" onclick="addPhase()">+ Add Phase</button>
+                </div>
+
+                <table style="margin-top: 0; table-layout: fixed; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 0.5rem; width: 22%; text-align: left;">Phase Name</th>
+                            <th style="padding: 0.5rem; width: 8%; text-align: center;">Color</th>
+                            <th style="padding: 0.5rem; width: 40%; text-align: left;">Dates (Start → End)</th>
+                            <th style="padding: 0.5rem; width: 18%; text-align: left;">Status</th>
+                            <th style="padding: 0.5rem; width: 12%; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="phases-list">
+                        <!-- Phases injected here -->
+                    </tbody>
+                </table>
+
+                <!-- Actions -->
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1rem;">
+                    <button class="btn" onclick="closeModal()">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveContext()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jira Settings Modal -->
+        <div id="settings-modal" class="modal-overlay hidden">
+            <div class="modal-content card" style="width: 500px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Jira Data Source</h2>
+                    <button class="btn" onclick="closeSettings()">✕</button>
+                </div>
+
+                <div class="alert"
+                    style="background: rgba(14, 165, 233, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; margin-bottom: 1rem;">
+                    <strong>Requirement:</strong> You must run the local proxy script for this to work.<br>
+                    <code>node proxy.js</code>
+                </div>
+                
+                <div class="alert" id="supabase-alert"
+                    style="background: rgba(34, 197, 94, 0.1); border: 1px solid var(--success-color); color: var(--success-color); padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; margin-bottom: 1rem; display: none;">
+                    <strong>✅ Cloud Storage Active</strong><br>
+                    Data is syncing to Supabase. Access from any device!
+                </div>
+                
+                <div class="alert" id="supabase-warning"
+                    style="background: rgba(245, 158, 11, 0.1); border: 1px solid var(--warning-color); color: var(--warning-color); padding: 0.75rem; border-radius: 4px; font-size: 0.9rem; margin-bottom: 1rem; display: none;">
+                    <strong>⚠️ Local Storage Only</strong><br>
+                    Configure Supabase for cloud sync. <a href="#" onclick="window.open('SUPABASE_SETUP.md'); return false;" style="color: var(--warning-color); text-decoration: underline;">Setup Guide</a>
+                </div>
+
+                <div class="form-group">
+                    <label>Jira Domain (e.g. your-company.atlassian.net)</label>
+                    <input type="text" id="jira-domain" placeholder="mycompany.atlassian.net">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="jira-email" placeholder="you@example.com">
+                </div>
+                <div class="form-group">
+                    <label>API Token</label>
+                    <input type="password" id="jira-token" placeholder="ATATT3xFfGF0...">
+                </div>
+                <div class="form-group">
+                    <label>JQL Query (Optional)</label>
+                    <input type="text" id="jira-jql" value='project in ("IT Portfolio") and "Technology Squad[Dropdown]" in ("Platform Development & Integration")' placeholder="JQL...">
+                </div>
+
+                <div style="display: flex; justify-content: space-between; margin-top: 1rem;">
+                    <button class="btn btn-danger" onclick="clearData()" style="font-size:0.8rem;">🗑️ Clear Local
+                        Data</button>
+						<button class="btn btn-primary" onclick="exportDataForEmail()" style="font-size:0.8rem;">
+  📤 Export for Email
+</button>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn" onclick="closeSettings()">Cancel</button>
+                        <button class="btn btn-primary" onclick="syncJira()">Sync Now</button>
+                    </div>
+                </div>
+                <div id="sync-status" style="margin-top: 0.5rem; text-align: right; font-size: 0.85rem;"></div>
+            </div>
+        </div>
+
+
+
+        
+		<script>
+
+// ====================================
+// SUPABASE CONFIGURATION
+// ====================================
+// 🔧 STEP 1: Replace these with your Supabase project credentials
+// Get them from: Supabase Dashboard → Settings → API
+const SUPABASE_URL = 'https://your-project.supabase.co';
+const SUPABASE_ANON_KEY = 'your-anon-key-here';
+
+// Initialize Supabase client
+let supabaseClient = null;
+let useSupabase = false;
+let connectionStatus = 'initializing';
+
+// Production Status Update Function
+function updateProductionStatus(status, message = '') {
+    const banner = document.getElementById('production-status');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    const storageText = document.getElementById('storage-text');
+    const statusPulse = document.getElementById('status-pulse');
+    
+    connectionStatus = status;
+    
+    switch(status) {
+        case 'connected':
+            banner.className = 'production-banner';
+            banner.style.background = 'linear-gradient(90deg, #22c55e 0%, #16a34a 100%)';
+            statusIcon.textContent = '☁️';
+            statusText.textContent = 'Production Mode | Cloud Storage Active';
+            storageText.textContent = 'Cloud Storage ✓';
+            statusPulse.className = 'status-pulse';
+            console.log('✅ Production: Connected to Supabase');
+            break;
+            
+        case 'local':
+            banner.className = 'production-banner local';
+            banner.style.background = 'linear-gradient(90deg, #eab308 0%, #ca8a04 100%)';
+            statusIcon.textContent = '💾';
+            statusText.textContent = 'Local Mode | Configure Supabase for Cloud Storage';
+            storageText.textContent = 'Local Storage Only';
+            statusPulse.className = 'status-pulse warning';
+            console.log('ℹ️ Production: Using Local Storage - Configure Supabase for cloud sync');
+            break;
+            
+        case 'error':
+            banner.className = 'production-banner error';
+            banner.style.background = 'linear-gradient(90deg, #ef4444 0%, #dc2626 100%)';
+            statusIcon.textContent = '⚠️';
+            statusText.textContent = 'Connection Error | Using Local Storage';
+            storageText.textContent = 'Error - Local Fallback';
+            storageText.title = message || 'Connection failed';
+            statusPulse.className = 'status-pulse error';
+            console.error('❌ Production: Connection error -', message);
+            break;
+            
+        case 'initializing':
+        default:
+            statusIcon.textContent = '⏳';
+            statusText.textContent = 'Initializing...';
+            storageText.textContent = 'Starting up...';
+            statusPulse.className = 'status-pulse';
+            break;
+    }
+}
+
+// Initialize Production Mode
+async function initializeProduction() {
+    console.log('🚀 Initializing Production Mode...');
+    updateProductionStatus('initializing');
+    
+    // Check if Supabase is configured
+    if (SUPABASE_URL === 'https://your-project.supabase.co' || 
+        SUPABASE_ANON_KEY === 'your-anon-key-here') {
+        
+        console.warn('⚠️ Supabase credentials not configured');
+        updateProductionStatus('local');
+        useSupabase = false;
+        
+        // Initialize IndexedDB fallback
+        await initDB();
+        return;
+    }
+    
+    // Try to initialize Supabase
+    try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Test the connection
+        const { error } = await supabaseClient
+            .from('initiatives')
+            .select('count', { count: 'exact', head: true });
+        
+        if (error) throw error;
+        
+        useSupabase = true;
+        updateProductionStatus('connected');
+        
+    } catch (error) {
+        console.error('Supabase connection failed:', error);
+        updateProductionStatus('error', error.message);
+        
+        // Fall back to IndexedDB
+        useSupabase = false;
+        await initDB();
+    }
+}
+
+// Health Check - runs periodically
+async function performHealthCheck() {
+    if (!useSupabase) return;
+    
+    try {
+        const { error } = await supabaseClient
+            .from('initiatives')
+            .select('count', { count: 'exact', head: true });
+        
+        if (error) throw error;
+        
+        if (connectionStatus !== 'connected') {
+            updateProductionStatus('connected');
+        }
+        
+    } catch (error) {
+        console.error('Health check failed:', error);
+        updateProductionStatus('error', error.message);
+    }
+}
+
+// Run health check every 5 minutes
+setInterval(performHealthCheck, 5 * 60 * 1000);
+
+// ====================================
+// SUPABASE DATABASE FUNCTIONS
+// ====================================
+
+async function checkSupabaseConnection() {
+    return performHealthCheck();
+}
+
+// Supabase: Get all initiatives
+async function getAllInitiativesFromSupabase() {
+    const { data, error } = await supabaseClient
+        .from('initiatives')
+        .select('*')
+        .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    // Transform database format to app format
+    return data.map(item => ({
+        id: item.id,
+        name: item.name,
+        owner: item.owner,
+        status: item.status,
+        startDate: item.start_date,
+        targetDate: item.target_date,
+        categories: item.categories || [],
+        tags: item.tags || [],
+        phases: item.phases || [],
+        keyInitiative: item.key_initiative || 'No',
+        created_at: item.created_at,
+        updated_at: item.updated_at
+    }));
+}
+
+// Supabase: Save initiative
+async function saveInitiativeToSupabase(initiative) {
+    const dbFormat = {
+        id: initiative.id,
+        name: initiative.name,
+        owner: initiative.owner,
+        status: initiative.status,
+        start_date: initiative.startDate,
+        target_date: initiative.targetDate,
+        categories: initiative.categories || [],
+        tags: initiative.tags || [],
+        phases: initiative.phases || [],
+        key_initiative: initiative.keyInitiative || 'No',
+        updated_at: new Date().toISOString()
+    };
+    
+    const { data, error } = await supabaseClient
+        .from('initiatives')
+        .upsert(dbFormat)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    
+    console.log('💾 Saved to Supabase:', initiative.id, initiative.name);
+    return initiative;
+}
+
+// Supabase: Delete initiative
+async function deleteInitiativeFromSupabase(id) {
+    const { error } = await supabaseClient
+        .from('initiatives')
+        .delete()
+        .eq('id', id);
+    
+    if (error) throw error;
+}
+
+// Supabase: Get all snapshots
+async function getAllSnapshotsFromSupabase() {
+    const { data, error } = await supabaseClient
+        .from('snapshots')
+        .select('*')
+        .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+        id: item.id.toString(),
+        note: item.note,
+        data: JSON.stringify(item.data),
+        created_at: item.created_at
+    }));
+}
+
+// Supabase: Create snapshot
+async function createSnapshotInSupabase(note) {
+    const initiatives = await getAllInitiatives();
+    
+    const { data, error } = await supabaseClient
+        .from('snapshots')
+        .insert({
+            note: note || '',
+            data: initiatives
+        })
+        .select()
+        .single();
+    
+    if (error) throw error;
+    
+    return {
+        id: data.id.toString(),
+        note: data.note,
+        data: JSON.stringify(data.data),
+        created_at: data.created_at
+    };
+}
+
+
+// Update storage status indicator in UI
+function updateStorageStatus() {
+    const statusDiv = document.getElementById('storage-status');
+    const supabaseAlert = document.getElementById('supabase-alert');
+    const supabaseWarning = document.getElementById('supabase-warning');
+    const migrateBtn = document.getElementById('btn-migrate');
+    
+    if (!statusDiv) return;
+    
+    if (useSupabase) {
+        statusDiv.innerHTML = '☁️ Cloud Storage';
+        statusDiv.style.color = 'var(--success-color)';
+        if (supabaseAlert) supabaseAlert.style.display = 'block';
+        if (supabaseWarning) supabaseWarning.style.display = 'none';
+        if (migrateBtn) migrateBtn.style.display = 'none';
+    } else {
+        statusDiv.innerHTML = '💾 Local Storage';
+        statusDiv.style.color = 'var(--text-muted)';
+        if (supabaseAlert) supabaseAlert.style.display = 'none';
+        if (supabaseWarning) supabaseWarning.style.display = 'block';
+        // Show migrate button if there's local data
+        if (migrateBtn && db) {
+            getAllInitiatives().then(initiatives => {
+                if (initiatives.length > 0) {
+                    migrateBtn.style.display = 'inline-block';
+                }
+            });
+        }
+    }
+}
+
+// Migration function to move data from IndexedDB to Supabase
+async function migrateToSupabase() {
+    if (!useSupabase) {
+        alert('Please configure Supabase credentials first!');
+        return;
+    }
+    
+    if (!confirm('This will copy all your local data to Supabase. Continue?')) {
+        return;
+    }
+    
+    try {
+        console.log('Starting migration to Supabase...');
+        
+        // Ensure IndexedDB is initialized
+        if (!db) await initDB();
+        
+        // Get all local data
+        const localInitiatives = await getAllInitiatives();
+        const localSnapshots = await getAllSnapshotsFromDB();
+        
+        console.log(`Migrating ${localInitiatives.length} initiatives...`);
+        
+        // Migrate initiatives
+        for (const initiative of localInitiatives) {
+            await saveInitiativeToSupabase(initiative);
+        }
+        
+        console.log(`Migrating ${localSnapshots.length} snapshots...`);
+        
+        // Migrate snapshots
+        for (const snapshot of localSnapshots) {
+            await supabaseClient.from('snapshots').insert({
+                note: snapshot.note,
+                data: JSON.parse(snapshot.data)
+            });
+        }
+        
+        console.log('✅ Migration complete!');
+        alert(`Successfully migrated ${localInitiatives.length} initiatives and ${localSnapshots.length} snapshots to Supabase!`);
+        
+        // Reload from Supabase
+        await loadState();
+        
+    } catch (error) {
+        console.error('Migration failed:', error);
+        alert('Migration failed: ' + error.message);
+    }
+}
+
+		
+		// Populate default phases for initiatives without phases
+async function populateDefaultPhases() {
+    const defaultPhases = [
+        {
+            name: 'Solutioning',
+            color: '#8b5cf6', // Violet
+            startDate: '2025-12-01T00:00:00.000Z',
+            endDate: '2026-01-31T23:59:59.000Z',
+            status: 'pending'
+        },
+        {
+            name: 'Development',
+            color: '#a855f7', // Purple
+            startDate: '2026-01-01T00:00:00.000Z',
+            endDate: '2026-03-31T23:59:59.000Z',
+            status: 'pending'
+        },
+        {
+            name: 'QA',
+            color: '#ec4899', // Pink
+            startDate: '2026-03-01T00:00:00.000Z',
+            endDate: '2026-04-30T23:59:59.000Z',
+            status: 'pending'
+        },
+        {
+            name: 'UAT Sign-off',
+            color: '#f59e0b', // Amber
+            startDate: '2026-04-01T00:00:00.000Z',
+            endDate: '2026-04-30T23:59:59.000Z',
+            status: 'pending'
+        },
+        {
+            name: 'Go-live',
+            color: '#22c55e', // Green
+            startDate: '2026-05-01T00:00:00.000Z',
+            endDate: '2026-05-31T23:59:59.000Z',
+            status: 'pending'
+        }
+    ];
+
+    let updatedCount = 0;
+    let skippedCount = 0;
+
+    for (const initiative of appState.initiatives) {
+        // Check if initiative already has phases
+        if (!initiative.phases || initiative.phases.length === 0) {
+            // Add default phases with unique IDs
+            initiative.phases = defaultPhases.map((phase, index) => ({
+                id: `${initiative.id}-phase-${Date.now()}-${index}`,
+                name: phase.name,
+                color: phase.color,
+                startDate: phase.startDate,
+                endDate: phase.endDate,
+                status: phase.status
+            }));
+
+            // Save to database
+            try {
+                await saveInitiativeToDB(initiative);
+                updatedCount++;
+                console.log(`✅ Added phases to: ${initiative.name} (${initiative.id})`);
+            } catch (error) {
+                console.error(`❌ Failed to update ${initiative.id}:`, error);
+            }
+        } else {
+            skippedCount++;
+            console.log(`⏭️  Skipped (already has phases): ${initiative.name} (${initiative.id})`);
+        }
+    }
+
+    // Reload data and render
+    await loadState();
+
+    // Show summary
+    alert(`
+✅ Phases Population Complete!
+
+Updated: ${updatedCount} initiatives
+Skipped: ${skippedCount} initiatives (already had phases)
+
+Default phases added:
+• Solutioning (Dec 2025 - Jan 2026)
+• Development (Jan 2026 - Mar 2026)
+• QA (Mar 2026 - Apr 2026)
+• UAT Sign-off (Apr 2026)
+• Go-live (May 2026)
+    `);
+}
+		
+		async function exportDataForEmail() {
+  try {
+    const initiatives = await getAllInitiatives();
+    
+    const response = await fetch('http://localhost:3001/api/export-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ initiatives, exportDate: new Date().toISOString() })
+    });
+    
+    const result = await response.json();
+    alert(result.success ? '✅ Data exported!' : '❌ Export failed');
+  } catch (error) {
+    alert('❌ Is email scheduler running?');
+  }
+}
+// ========== IndexedDB Database Layer ==========
+const DB_NAME = 'InitiativeTrackerDB';
+const DB_VERSION = 1;
+let db = null;
+
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      db = request.result;
+      console.log('✅ IndexedDB initialized');
+      resolve(db);
+    };
+    
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      
+      if (!db.objectStoreNames.contains('initiatives')) {
+        const initiativeStore = db.createObjectStore('initiatives', { keyPath: 'id' });
+        initiativeStore.createIndex('status', 'status', { unique: false });
+        initiativeStore.createIndex('owner', 'owner', { unique: false });
+      }
+      
+      if (!db.objectStoreNames.contains('snapshots')) {
+        db.createObjectStore('snapshots', { keyPath: 'id', autoIncrement: true });
+      }
+      
+      console.log('✅ Database schema created');
+    };
+  });
+}
+
+async function getAllInitiatives() {
+  if (useSupabase) {
+    return await getAllInitiativesFromSupabase();
+  }
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['initiatives'], 'readonly');
+    const store = transaction.objectStore('initiatives');
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveInitiativeToDB(initiative) {
+  if (useSupabase) {
+    return await saveInitiativeToSupabase(initiative);
+  }
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['initiatives'], 'readwrite');
+    const store = transaction.objectStore('initiatives');
+    
+    if (!initiative.created_at) {
+      initiative.created_at = new Date().toISOString();
+    }
+    initiative.updated_at = new Date().toISOString();
+    
+    const request = store.put(initiative);
+    request.onsuccess = () => {
+      console.log('💾 Saved initiative to DB:', initiative.id, initiative.name);
+      resolve(initiative);
+    };
+    request.onerror = () => {
+      console.error('❌ Failed to save initiative:', initiative.id, request.error);
+      reject(request.error);
+    };
+  });
+}
+
+async function getAllSnapshotsFromDB() {
+  if (useSupabase) {
+    return await getAllSnapshotsFromSupabase();
+  }
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['snapshots'], 'readonly');
+    const store = transaction.objectStore('snapshots');
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function createSnapshotInDB(note) {
+  if (useSupabase) {
+    return await createSnapshotInSupabase(note);
+  }
+  
+  return new Promise(async (resolve, reject) => {
+    try {
+      const initiatives = await getAllInitiatives();
+      const snapshot = {
+        note: note || '',
+        data: JSON.stringify(initiatives),
+        created_at: new Date().toISOString()
+      };
+      
+      const transaction = db.transaction(['snapshots'], 'readwrite');
+      const store = transaction.objectStore('snapshots');
+      const request = store.add(snapshot);
+      
+      request.onsuccess = () => {
+        snapshot.id = request.result;
+        resolve(snapshot);
+      };
+      request.onerror = () => reject(request.error);
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+// ... rest of your code
+		
+		// Modern Color Palette
+const MODERN_COLORS = [
+    '#3b82f6', '#8b5cf6', '#a855f7', '#ec4899', '#f43f5e',
+    '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#f59e0b',
+    '#f97316', '#ef4444', '#6366f1', '#84cc16', '#eab308'
+];
+
+function getRandomModernColor() {
+    return MODERN_COLORS[Math.floor(Math.random() * MODERN_COLORS.length)];
+}
+		
+            // --- STATE ---
+            let appState = {
+                initiatives: [],
+                snapshots: [],
+                filterStatus: 'all',
+                filterCategory: 'all',
+                sortKey: 'name',
+                sortOrder: 'asc', // asc or desc
+                timelineFilters: {
+                    name: '',
+                    key: '',
+                    owner: '',
+                    status: 'all',
+                    targetDate: ''
+                }
+            };
+            let editingId = null;
+            let editingCopy = null;
+
+            // Drag State
+            let dragData = {
+                active: false,
+                phaseId: null,
+                initiativeId: null,
+                startX: 0,
+                originalStart: 0,
+                originalEnd: 0,
+                element: null
+            };
+
+            // --- TIMELINE CONSTANTS ---
+            const PHASE_COLORS = {
+                'Planning': '#3b82f6', // Blue
+                'Design': '#8b5cf6', // Violet
+                'Development': '#a855f7', // Purple
+                'QA': '#ec4899', // Pink
+                'Launch': '#22c55e', // Green
+                'Migration': '#f59e0b', // Amber
+            };
+            const DEFAULT_PHASE_COLOR = '#64748b'; // Slate
+            const BAR_HEIGHT = 20;
+            const BAR_GAP = 4;
+            const LANE_HEIGHT = BAR_HEIGHT + BAR_GAP;
+
+            // --- STORAGE ---
+const loadState = async () => {
+  try {
+    // Initialize database if using IndexedDB
+    if (!useSupabase && !db) {
+      await initDB();
+    }
+    
+    appState.initiatives = await getAllInitiatives();
+    const source = useSupabase ? 'Supabase' : 'IndexedDB';
+    console.log(`✅ Loaded ${appState.initiatives.length} initiatives from ${source}`);
+    
+    const snapshots = await getAllSnapshotsFromDB();
+    appState.snapshots = snapshots.map(s => ({
+      id: s.id.toString(),
+      date: s.created_at,
+      initiatives: JSON.parse(s.data),
+      note: s.note
+    }));
+    
+    render();
+  } catch (error) {
+    console.error('❌ Error loading data:', error);
+    alert('Failed to load data: ' + error.message);
+  }
+};
+
+            const saveState = () => {
+                localStorage.setItem('retro_astro_initiatives_vanilla', JSON.stringify(appState.initiatives));
+                localStorage.setItem('retro_astro_snapshots_vanilla', JSON.stringify(appState.snapshots));
+                render();
+            };
+
+            // --- ACTIONS ---
+            function seedData() {
+                appState.initiatives = [
+                    {
+                        id: '1', name: 'Q1 Core Platform Migration', owner: 'Alice DB', status: 'active',
+                        startDate: new Date(Date.now() - 864e5 * 10).toISOString(),
+                        targetDate: new Date(Date.now() + 864e5 * 45).toISOString(),
+                        categories: ['Platform Development'],
+                        phases: [
+                            { id: 'p1', name: 'Planning', color: '#3b82f6', startDate: new Date(Date.now() - 864e5 * 10).toISOString(), endDate: new Date(Date.now() - 864e5 * 5).toISOString(), status: 'completed' },
+                            { id: 'p2', name: 'Migration', color: '#f59e0b', startDate: new Date(Date.now() - 864e5 * 4).toISOString(), endDate: new Date(Date.now() + 864e5 * 30).toISOString(), status: 'active' },
+                            { id: 'p3', name: 'QA', color: '#ec4899', startDate: new Date(Date.now() + 864e5 * 31).toISOString(), endDate: new Date(Date.now() + 864e5 * 45).toISOString(), status: 'pending' }
+                        ]
+                    },
+                    { id: '2', name: 'Mobile App Refactor', owner: 'Bob Mobile', status: 'risk', categories: ['Platform Development', 'Mobile'], startDate: new Date(Date.now() - 864e5 * 20).toISOString(), targetDate: new Date(Date.now() + 864e5 * 5).toISOString(), phases: [] },
+                    { id: '3', name: 'Design System 2.0', owner: 'Carol UI', status: 'planned', categories: ['Enterprise Integration'], startDate: new Date(Date.now() + 864e5 * 5).toISOString(), targetDate: new Date(Date.now() + 864e5 * 60).toISOString(), phases: [] },
+                    { id: '4', name: 'Legacy API Shutdown', owner: 'Dave Ops', status: 'completed', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 40).toISOString(), targetDate: new Date(Date.now() - 864e5 * 10).toISOString(), phases: [] },
+                    { id: '5', name: 'Customer Portal V3', owner: 'Sarah N.', status: 'active', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 15).toISOString(), targetDate: new Date(Date.now() + 864e5 * 30).toISOString(), phases: [] },
+                    { id: '6', name: 'Analytics Dashboard', owner: 'Mike Data', status: 'risk', categories: ['Platform Development'], startDate: new Date(Date.now() - 864e5 * 25).toISOString(), targetDate: new Date(Date.now() - 864e5 * 2).toISOString(), phases: [] },
+                    { id: '7', name: 'Onboarding Flow Optimization', owner: 'Jessica P.', status: 'completed', startDate: new Date(Date.now() - 864e5 * 50).toISOString(), targetDate: new Date(Date.now() - 864e5 * 15).toISOString(), phases: [] },
+                    { id: '8', name: 'AI Recommendation Engine', owner: 'Tom AI', status: 'planned', categories: ['Platform Development'], startDate: new Date(Date.now() + 864e5 * 10).toISOString(), targetDate: new Date(Date.now() + 864e5 * 90).toISOString(), phases: [] }
+                ];
+                saveState();
+            }
+
+            // --- MODAL & PHASES ---
+            function openModal(id) {
+                editingId = id;
+                const note = appState.initiatives.find(i => i.id === id);
+                if (!note) return;
+                editingCopy = JSON.parse(JSON.stringify(note));
+
+                document.getElementById('edit-name').value = editingCopy.name;
+                document.getElementById('edit-owner').value = editingCopy.owner;
+                document.getElementById('edit-start').value = editingCopy.startDate.split('T')[0];
+                document.getElementById('edit-target').value = editingCopy.targetDate.split('T')[0];
+                document.getElementById('edit-status').value = editingCopy.status;
+
+                // Initialize multi-select components
+                initializeMultiSelect('categories', editingCopy.categories || []);
+                initializeMultiSelect('tags', editingCopy.tags || []);
+
+                renderPhases();
+
+                document.getElementById('modal-wrapper').classList.remove('hidden');
+            }
+
+            function closeModal() {
+                document.getElementById('modal-wrapper').classList.add('hidden');
+                editingId = null;
+                editingCopy = null;
+            }
+
+            async function saveContext() {
+  if (!editingId || !editingCopy) return;
+  
+  editingCopy.name = document.getElementById('edit-name').value;
+  editingCopy.owner = document.getElementById('edit-owner').value;
+  
+  const startDate = new Date(document.getElementById('edit-start').value);
+  const targetDate = new Date(document.getElementById('edit-target').value);
+  
+  // Validate main initiative dates
+  if (startDate > targetDate) {
+    alert('⚠️ Start Date cannot be later than Target Date!\n\nStart: ' + startDate.toLocaleDateString() + '\nTarget: ' + targetDate.toLocaleDateString());
+    
+    // Add visual feedback
+    const startInput = document.getElementById('edit-start');
+    const targetInput = document.getElementById('edit-target');
+    startInput.classList.add('error');
+    targetInput.classList.add('error');
+    setTimeout(() => {
+      startInput.classList.remove('error');
+      targetInput.classList.remove('error');
+    }, 500);
+    
+    return;
+  }
+  
+  editingCopy.startDate = startDate.toISOString();
+  editingCopy.targetDate = targetDate.toISOString();
+  editingCopy.status = document.getElementById('edit-status').value;
+  editingCopy.categories = getMultiSelectValues('categories');
+  editingCopy.tags = getMultiSelectValues('tags');
+  
+  // Validate all phases
+  if (editingCopy.phases && editingCopy.phases.length > 0) {
+    for (let i = 0; i < editingCopy.phases.length; i++) {
+      const phase = editingCopy.phases[i];
+      const phaseStart = new Date(phase.startDate);
+      const phaseEnd = new Date(phase.endDate);
+      
+      if (phaseStart > phaseEnd) {
+        alert('⚠️ Phase "' + phase.name + '" has invalid dates!\n\nStart Date cannot be later than End Date.\n\nPhase Start: ' + phaseStart.toLocaleDateString() + '\nPhase End: ' + phaseEnd.toLocaleDateString());
+        return;
+      }
+    }
+  }
+  
+  try {
+    const saved = await saveInitiativeToDB(editingCopy);
+    
+    const idx = appState.initiatives.findIndex(i => i.id === editingId);
+    if (idx !== -1) {
+      appState.initiatives[idx] = saved;
+    } else {
+      appState.initiatives.push(saved);
+    }
+    
+    render();
+    closeModal();
+  } catch (error) {
+    alert('Failed to save: ' + error.message);
+  }
+}
+
+            // --- MULTI-SELECT HELPERS ---
+            let selectedCategories = [];
+            let selectedTags = [];
+
+            function initializeMultiSelect(type, values) {
+                if (type === 'categories') {
+                    selectedCategories = [...values];
+                    renderSelectedItems('categories');
+                    renderDropdownOptions('categories');
+                } else if (type === 'tags') {
+                    selectedTags = [...values];
+                    renderSelectedItems('tags');
+                    renderDropdownOptions('tags');
+                }
+            }
+
+            function getMultiSelectValues(type) {
+                return type === 'categories' ? selectedCategories : selectedTags;
+            }
+
+            function getAllOptions(type) {
+                const allItems = new Set();
+                appState.initiatives.forEach(i => {
+                    const items = type === 'categories' ? (i.categories || []) : (i.tags || []);
+                    items.forEach(item => allItems.add(item));
+                });
+                return Array.from(allItems).sort();
+            }
+
+            function renderSelectedItems(type) {
+                const container = document.querySelector(`#${type}-multiselect .selected-items`);
+                const input = document.getElementById(`${type}-input`);
+                const selected = type === 'categories' ? selectedCategories : selectedTags;
+
+                Array.from(container.children).forEach(child => {
+                    if (child !== input) child.remove();
+                });
+
+                selected.forEach(item => {
+                    const badge = document.createElement('div');
+                    badge.className = 'selected-item';
+                    badge.innerHTML = `
+                        <span>${item}</span>
+                        <span class="remove" onmousedown="removeItem('${type}', '${item}')">×</span>
+                    `;
+                    container.insertBefore(badge, input);
+                });
+            }
+
+            function renderDropdownOptions(type, filter = '') {
+                const dropdown = document.getElementById(`${type}-dropdown`);
+                const allOptions = getAllOptions(type);
+                const selected = type === 'categories' ? selectedCategories : selectedTags;
+                const input = document.getElementById(`${type}-input`);
+                const inputValue = input.value.trim();
+
+                let options = allOptions.filter(opt =>
+                    opt.toLowerCase().includes(filter.toLowerCase()) && !selected.includes(opt)
+                );
+
+                if (inputValue && !allOptions.includes(inputValue) && !selected.includes(inputValue)) {
+                    options = [`+ Create "${inputValue}"`, ...options];
+                }
+
+                dropdown.innerHTML = options.map(opt => {
+                    const isCreate = opt.startsWith('+ Create');
+                    return `<div class="multi-select-option" onmousedown="selectOption('${type}', '${isCreate ? inputValue : opt}')">${opt}</div>`;
+                }).join('');
+
+                if (options.length === 0) {
+                    dropdown.innerHTML = '<div class="multi-select-option" style="color: var(--text-muted);">No options</div>';
+                }
+            }
+
+            function selectOption(type, value) {
+                const selected = type === 'categories' ? selectedCategories : selectedTags;
+                if (!selected.includes(value)) {
+                    selected.push(value);
+                    if (type === 'categories') selectedCategories = selected;
+                    else selectedTags = selected;
+
+                    renderSelectedItems(type);
+                    renderDropdownOptions(type);
+                    document.getElementById(`${type}-input`).value = '';
+                    document.getElementById(`${type}-input`).focus();
+                }
+            }
+
+            function removeItem(type, value) {
+                if (type === 'categories') {
+                    selectedCategories = selectedCategories.filter(c => c !== value);
+                } else {
+                    selectedTags = selectedTags.filter(t => t !== value);
+                }
+                renderSelectedItems(type);
+                renderDropdownOptions(type);
+            }
+
+            function focusCategoriesInput() {
+                document.getElementById('categories-input').focus();
+            }
+
+            function focusTagsInput() {
+                document.getElementById('tags-input').focus();
+            }
+
+            function showCategoriesDropdown() {
+                renderDropdownOptions('categories');
+                document.getElementById('categories-dropdown').classList.remove('hidden');
+            }
+
+            function showTagsDropdown() {
+                renderDropdownOptions('tags');
+                document.getElementById('tags-dropdown').classList.remove('hidden');
+            }
+
+            function hideCategoriesDropdown() {
+                setTimeout(() => {
+                    document.getElementById('categories-dropdown').classList.add('hidden');
+                }, 200);
+            }
+
+            function hideTagsDropdown() {
+                setTimeout(() => {
+                    document.getElementById('tags-dropdown').classList.add('hidden');
+                }, 200);
+            }
+
+            function filterCategoriesDropdown(value) {
+                renderDropdownOptions('categories', value);
+            }
+
+            function filterTagsDropdown(value) {
+                renderDropdownOptions('tags', value);
+            }
+
+            function handleCategoriesKeydown(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const value = event.target.value.trim();
+                    if (value) {
+                        selectOption('categories', value);
+                    }
+                } else if (event.key === 'Backspace' && event.target.value === '' && selectedCategories.length > 0) {
+                    selectedCategories.pop();
+                    renderSelectedItems('categories');
+                    renderDropdownOptions('categories');
+                }
+            }
+
+            function handleTagsKeydown(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const value = event.target.value.trim();
+                    if (value) {
+                        selectOption('tags', value);
+                    }
+                } else if (event.key === 'Backspace' && event.target.value === '' && selectedTags.length > 0) {
+                    selectedTags.pop();
+                    renderSelectedItems('tags');
+                    renderDropdownOptions('tags');
+                }
+            }
+
+            function renderPhases() {
+                const tbody = document.getElementById('phases-list');
+                tbody.innerHTML = '';
+
+                if (!editingCopy.phases) editingCopy.phases = [];
+
+                if (editingCopy.phases.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted); font-size:0.8rem;">No phases added yet.</td></tr>';
+                    return;
+                }
+
+                const now = new Date();
+                
+                // Count overdue phases
+                const overduePhases = editingCopy.phases.filter(p => {
+                    const endDate = new Date(p.endDate);
+                    return endDate < now && p.status !== 'completed';
+                });
+                
+                // Add overdue warning banner if there are overdue phases
+                if (overduePhases.length > 0) {
+                    const warningRow = document.createElement('tr');
+                    warningRow.innerHTML = `
+                        <td colspan="5" style="padding: 0.75rem; background: rgba(239, 68, 68, 0.1); border: 2px solid var(--danger-color); border-radius: 4px;">
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span style="font-size: 1.2rem;">🚨</span>
+                                <div>
+                                    <strong style="color: var(--danger-color);">ATTENTION: ${overduePhases.length} Overdue Phase${overduePhases.length !== 1 ? 's' : ''}</strong>
+                                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 2px;">
+                                        ${overduePhases.map(p => {
+                                            const days = Math.ceil((now - new Date(p.endDate)) / (1000 * 60 * 60 * 24));
+                                            return `${p.name} (${days} day${days !== 1 ? 's' : ''} overdue)`;
+                                        }).join(' • ')}
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(warningRow);
+                }
+                
+                editingCopy.phases.forEach((phase, idx) => {
+                    const tr = document.createElement('tr');
+                    // Resolve color: explicit > mapped > default
+                    const color = phase.color || PHASE_COLORS[phase.name] || PHASE_COLORS[phase.name.split(' ')[0]] || DEFAULT_PHASE_COLOR;
+                    
+                    // Check if phase is overdue (past end date and not completed)
+                    const endDate = new Date(phase.endDate);
+                    const isOverdue = endDate < now && phase.status !== 'completed';
+                    const daysOverdue = isOverdue ? Math.ceil((now - endDate) / (1000 * 60 * 60 * 24)) : 0;
+                    
+                    // Add overdue class to row for styling
+                    if (isOverdue) {
+                        tr.classList.add('phase-overdue');
+                        tr.dataset.daysOverdue = daysOverdue;
+                    }
+
+                    tr.innerHTML = `
+                <td style="padding:0.5rem; width: 22%; vertical-align: middle;">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        ${isOverdue ? '<span style="color: var(--danger-color); font-weight: bold; font-size: 0.9rem; flex-shrink: 0;" title="OVERDUE by ' + daysOverdue + ' day(s)">🚨</span>' : ''}
+                        <input class="phase-input" onchange="updatePhase(${idx}, 'name', this.value)" value="${phase.name}" style="width:100%; min-width: 0;">
+                    </div>
+                </td>
+                <td style="padding:0.5rem; width: 8%; text-align: center; vertical-align: middle;">
+                    <input type="color" value="${color}" onchange="updatePhase(${idx}, 'color', this.value)" style="width: 50px; height: 35px; cursor: pointer;">
+                </td>
+                <td style="padding:0.5rem; width: 40%; vertical-align: middle;">
+                    <div style="display:flex; gap:0.5rem; align-items:center;">
+                         <div style="flex:1; min-width: 0;">
+                             <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:2px;">Start</label>
+                             <input type="date" value="${phase.startDate ? phase.startDate.split('T')[0] : ''}" onchange="updatePhase(${idx}, 'startDate', this.valueAsString)" class="date-safe" style="width:100%;" title="Phase Start Date">
+                         </div>
+                         <span style="color:var(--text-muted); padding-top:18px; flex-shrink: 0;">→</span>
+                         <div style="flex:1; min-width: 0;">
+                             <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:2px;">End</label>
+                             <input type="date" value="${phase.endDate ? phase.endDate.split('T')[0] : ''}" onchange="updatePhase(${idx}, 'endDate', this.valueAsString)" class="date-safe-end" style="width:100%;" title="Phase End Date">
+                         </div>
+                    </div>
+                </td>
+                <td style="padding:0.5rem; width: 18%; vertical-align: middle;">
+                    <select onchange="updatePhase(${idx}, 'status', this.value)" style="width: 100%;">
+                        <option value="pending" ${phase.status === 'pending' ? 'selected' : ''}>Pending</option>
+                        <option value="active" ${phase.status === 'active' ? 'selected' : ''}>Active</option>
+                        <option value="completed" ${phase.status === 'completed' ? 'selected' : ''}>Completed</option>
+                    </select>
+                </td>
+                <td style="padding:0.5rem; width: 12%; text-align: center; vertical-align: middle;">
+                    <button class="btn btn-sm btn-danger" onclick="deletePhase(${idx})">🗑️</button>
+                </td>
+            `;
+                    const startInput = tr.querySelector('.date-safe');
+                    startInput.onchange = (e) => updatePhase(idx, 'startDate', new Date(e.target.value).toISOString());
+                    const endInput = tr.querySelector('.date-safe-end');
+                    endInput.onchange = (e) => updatePhase(idx, 'endDate', new Date(e.target.value).toISOString());
+
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function addPhase(startDate = null) {
+                const start = startDate ? startDate : new Date().toISOString();
+                const end = startDate ? new Date(new Date(startDate).getTime() + 864e5 * 14).toISOString() : new Date().toISOString(); // Default 2 weeks
+
+                editingCopy.phases.push({
+                    id: Date.now().toString(),
+                    name: 'New Phase',
+                    color: getRandomModernColor(),
+                    startDate: start,
+                    endDate: end,
+                    status: 'pending'
+                });
+                renderPhases();
+            }
+
+            function updatePhase(idx, field, value) {
+                const phase = editingCopy.phases[idx];
+                
+                // Validate dates
+                if (field === 'startDate' || field === 'endDate') {
+                    const startDate = field === 'startDate' ? new Date(value) : new Date(phase.startDate);
+                    const endDate = field === 'endDate' ? new Date(value) : new Date(phase.endDate);
+                    
+                    if (startDate > endDate) {
+                        alert('⚠️ Start Date cannot be later than End Date!\n\nPhase: ' + phase.name + '\nStart: ' + startDate.toLocaleDateString() + '\nEnd: ' + endDate.toLocaleDateString());
+                        
+                        // Add error class for visual feedback
+                        const tbody = document.getElementById('phases-list');
+                        const row = tbody.children[idx];
+                        const inputs = row.querySelectorAll('input[type="date"]');
+                        inputs.forEach(input => {
+                            input.classList.add('error');
+                            setTimeout(() => input.classList.remove('error'), 500);
+                        });
+                        
+                        renderPhases(); // Re-render to reset the input
+                        return;
+                    }
+                }
+                
+                editingCopy.phases[idx][field] = value;
+            }
+
+            function deletePhase(idx) {
+                editingCopy.phases.splice(idx, 1);
+                renderPhases();
+            }
+
+
+            async function takeSnapshot() {
+  const note = document.getElementById('snap-note').value;
+  
+  try {
+    const snapshot = await createSnapshotInDB(note);
+    
+    appState.snapshots.unshift({
+      id: snapshot.id.toString(),
+      date: snapshot.created_at,
+      initiatives: JSON.parse(snapshot.data),
+      note: snapshot.note
+    });
+    
+    document.getElementById('snap-note').value = '';
+    render();
+  } catch (error) {
+    console.error('Error creating snapshot:', error);
+    alert('Failed to create snapshot');
+  }
+}
+
+            function switchView(viewName) {
+                document.getElementById('view-current').classList.toggle('hidden', viewName !== 'current');
+                document.getElementById('view-timeline').classList.toggle('hidden', viewName !== 'timeline');
+                document.getElementById('view-snapshots').classList.toggle('hidden', viewName !== 'snapshots');
+
+                document.getElementById('btn-view-current').classList.toggle('active', viewName === 'current');
+                document.getElementById('btn-view-timeline').classList.toggle('active', viewName === 'timeline');
+                document.getElementById('btn-view-snapshots').classList.toggle('active', viewName === 'snapshots');
+
+                render();
+            }
+
+            function viewSnapshot(id) {
+                const snap = appState.snapshots.find(s => s.id === id);
+                if (!snap) return;
+
+                const p = document.getElementById('snapshot-preview');
+                p.classList.remove('hidden');
+                document.getElementById('preview-meta').innerText = `${new Date(snap.date).toLocaleString()} - ${snap.note || ''}`;
+
+                document.getElementById('s-total').innerText = snap.initiatives.length;
+                document.getElementById('s-completed').innerText = snap.initiatives.filter(i => i.status === 'completed').length;
+                document.getElementById('s-active').innerText = snap.initiatives.filter(i => i.status === 'active').length;
+                document.getElementById('s-risk').innerText = snap.initiatives.filter(i => i.status === 'risk').length;
+
+                // Render Read-Only Table for Snapshot
+                const sTbody = document.getElementById('snapshot-table-body');
+                sTbody.innerHTML = '';
+                snap.initiatives.forEach(i => {
+                    const tr = document.createElement('tr');
+                    let phasesHtml = '';
+                    if (i.phases && i.phases.length > 0) {
+                        phasesHtml = `<div style="display:flex; flex-direction:column; gap:4px; margin-top:4px;">
+                    ${i.phases.map(p => `
+                        <div style="font-size:0.8rem; color:var(--text-secondary); display:flex; justify-content:space-between; background:rgba(255,255,255,0.05); padding:2px 4px; borderRadius:4px;">
+                            <span>${p.name}</span>
+                            <span>${new Date(p.startDate).toLocaleDateString()} - ${new Date(p.endDate).toLocaleDateString()}</span>
+                        </div>
+                    `).join('')}
+                </div>`;
+                    } else {
+                        phasesHtml = `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">No phases defined</div>`;
+                    }
+
+                    const tagsHtml = (i.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
+
+                    tr.innerHTML = `
+                <td style="vertical-align:top;">
+                    <strong>${i.name}</strong><br>
+                    <span style="font-size:0.8rem; color:var(--text-muted)">${i.owner}</span>
+                    <div style="margin-top:4px;">${tagsHtml}</div>
+                </td>
+                <td>
+                    <div style="font-size:0.85rem;">Overall: ${new Date(i.startDate).toLocaleDateString()} - ${new Date(i.targetDate).toLocaleDateString()}</div>
+                    ${phasesHtml}
+                </td>
+                <td style="vertical-align:top;"><span class="badge ${i.status}">${i.status}</span></td>
+            `;
+                    sTbody.appendChild(tr);
+                });
+
+                // Render Timeline for Snapshot
+                renderTimeline(snap.initiatives, 'snapshot-timeline-rows', 'snapshot-timeline-axis', false);
+            }
+
+            function setFilter(status) {
+                appState.filterStatus = status;
+                render();
+            }
+
+            function setCategoryFilter(category) {
+                appState.filterCategory = category;
+                render();
+            }
+
+            function renderCategoryFilters() {
+                const container = document.getElementById('category-filters');
+                if (!container) return;
+
+                // Extract unique categories
+                const categories = new Set();
+                appState.initiatives.forEach(i => {
+                    if (i.categories) i.categories.forEach(c => categories.add(c));
+                });
+
+                const list = ['all', ...Array.from(categories).sort()];
+
+                container.innerHTML = list.map(cat => {
+                    const count = cat === 'all'
+                        ? appState.initiatives.length
+                        : appState.initiatives.filter(i => i.categories && i.categories.includes(cat)).length;
+
+                    const label = cat === 'all' ? 'All Categories' : cat;
+                    const activeClass = appState.filterCategory === cat ? 'active' : '';
+
+                    return `
+                        <div class="category-pill ${activeClass}" onclick="setCategoryFilter('${cat}')">
+                            ${label}
+                            <span class="count">${count}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            function updateTimelineFilters(key, value) {
+                appState.timelineFilters[key] = value;
+                render();
+            }
+
+            function clearTimelineFilters() {
+                appState.timelineFilters = {
+                    name: '',
+                    key: '',
+                    owner: '',
+                    status: 'all',
+                    targetDate: ''
+                };
+                // Reset UI inputs
+                document.getElementById('filter-tl-name').value = '';
+                document.getElementById('filter-tl-key').value = '';
+                document.getElementById('filter-tl-owner').value = '';
+                document.getElementById('filter-tl-status').value = 'all';
+                document.getElementById('filter-tl-date').value = '';
+                render();
+            }
+
+            function sortBy(key) {
+                if (appState.sortKey === key) {
+                    appState.sortOrder = appState.sortOrder === 'asc' ? 'desc' : 'asc';
+                } else {
+                    appState.sortKey = key;
+                    appState.sortOrder = 'asc';
+                }
+                render();
+            }
+
+            // --- RENDER ---
+            function render() {
+                const initiatives = appState.initiatives;
+
+                // 1. Metrics & Filters
+                renderCategoryFilters();
+
+                document.getElementById('m-total').innerText = initiatives.length;
+                document.getElementById('m-completed').innerText = initiatives.filter(i => i.status === 'completed').length;
+                document.getElementById('m-active').innerText = initiatives.filter(i => i.status === 'active' || i.status === 'risk').length;
+                document.getElementById('m-risk').innerText = initiatives.filter(i => i.status === 'risk').length;
+
+                // Update Active Filter Class
+                ['all', 'completed', 'active', 'risk'].forEach(s => {
+                    const el = document.getElementById(`filter-${s}`);
+                    if (el) el.classList.toggle('active', appState.filterStatus === s);
+                });
+
+                // Update Table Header Sort Indicators
+                ['id', 'name', 'owner', 'keyInitiative', 'targetDate', 'status'].forEach(k => {
+                    const el = document.getElementById(`header-${k}`);
+                    if (el) {
+                        el.classList.remove('asc', 'desc');
+                        if (appState.sortKey === k) {
+                            el.classList.add(appState.sortOrder);
+                        }
+                    }
+                });
+
+                // 2. Table (Filtered & Sorted)
+                let filteredInitiatives = initiatives
+                    .filter(i => {
+                        if (appState.filterStatus === 'all') return true;
+                        if (appState.filterStatus === 'active') return i.status === 'active' || i.status === 'risk';
+                        return i.status === appState.filterStatus;
+                    })
+                    .filter(i => appState.filterCategory === 'all' || (i.categories && i.categories.includes(appState.filterCategory)));
+
+                // Apply Sort
+                filteredInitiatives.sort((a, b) => {
+                    let valA = a[appState.sortKey];
+                    let valB = b[appState.sortKey];
+
+                    // Handle string casing and dates
+                    if (typeof valA === 'string') valA = valA.toLowerCase();
+                    if (typeof valB === 'string') valB = valB.toLowerCase();
+
+                    if (valA < valB) return appState.sortOrder === 'asc' ? -1 : 1;
+                    if (valA > valB) return appState.sortOrder === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+                if (filteredInitiatives.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">No ${appState.filterStatus === 'all' ? '' : appState.filterStatus} initiatives found.</td></tr>`;
+                    if (initiatives.length === 0) {
+                        document.getElementById('btn-seed').classList.remove('hidden');
+                    }
+                } else {
+                    document.getElementById('btn-seed').classList.add('hidden');
+                }
+
+                filteredInitiatives.forEach(i => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'clickable';
+                    tr.onclick = () => openModal(i.id);
+
+                    const categoriesHtml = (i.categories || []).map(c => `<span style="font-size: 0.65rem; background:rgba(14, 165, 233, 0.1); color:var(--accent-color); border:1px solid rgba(14, 165, 233, 0.3); padding:1px 6px; border-radius:4px; margin-right:4px; display:inline-block;">${c}</span>`).join('');
+                    const tagsHtml = (i.tags || []).map(t => `<span class="tag-badge">${t}</span>`).join('');
+                    const domain = localStorage.getItem('jira_domain') || 'your-domain.atlassian.net';
+                    const jiraLink = `https://${domain}/browse/${i.id}`;
+
+                    tr.innerHTML = `
+                <td><a href="${jiraLink}" target="_blank" onclick="event.stopPropagation();" style="color:var(--accent-color); text-decoration:none; font-weight:bold;">${i.id}</a></td>
+                <td style="font-weight:500;">
+                   <div style="display:flex; gap:0.5rem; align-items:center;">
+                        ${i.name}
+                        ${(i.phases && i.phases.length > 0) ? '<span style="font-size:0.7rem; background:rgba(255,255,255,0.1); padding:2px 6px; borderRadius:4px">' + i.phases.length + ' Phases</span>' : ''}
+                   </div>
+                   <div style="margin-top: 4px;">${categoriesHtml} ${tagsHtml}</div>
+                </td>
+                <td style="color:var(--text-secondary)">${i.owner}</td>
+                <td style="text-align: center; font-size: 1.2rem;">${(i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')) ? '🚩' : ''}</td>
+                <td>${new Date(i.targetDate).toLocaleDateString()}</td>
+                <td><span class="badge ${i.status}">${i.status}</span></td>
+            `;
+                    if (i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')) tr.classList.add('key-initiative');
+                    tbody.appendChild(tr);
+                });
+
+                // 3. Timeline (with its own filters)
+                const tl = appState.timelineFilters;
+                const filteredForTimeline = initiatives.filter(i => {
+                    const matchName = i.name.toLowerCase().includes(tl.name.toLowerCase());
+                    const matchKey = i.id.toLowerCase().includes(tl.key.toLowerCase());
+                    const matchOwner = i.owner.toLowerCase().includes(tl.owner.toLowerCase());
+                    const matchStatus = tl.status === 'all' || i.status === tl.status;
+                    const matchDate = !tl.targetDate || new Date(i.targetDate) <= new Date(tl.targetDate);
+                    return matchName && matchKey && matchOwner && matchStatus && matchDate;
+                });
+
+                renderTimeline(filteredForTimeline, 'timeline-rows', 'timeline-axis', true);
+
+                // 4. Snapshots List
+                const snapList = document.getElementById('snapshot-list');
+                snapList.innerHTML = '';
+                appState.snapshots.forEach(s => {
+                    const btn = document.createElement('button');
+                    btn.className = 'badge planned';
+                    btn.style.cursor = 'pointer';
+                    btn.style.marginRight = '5px';
+                    btn.innerText = new Date(s.date).toLocaleDateString();
+                    btn.onclick = () => viewSnapshot(s.id);
+                    snapList.appendChild(btn);
+                });
+            }
+
+            // --- DRAG HANDLERS ---
+
+            // Attach global listeners for drag stability (leave track)
+            document.addEventListener('mousemove', (e) => {
+                if (!dragData.active) return;
+                e.preventDefault();
+
+                const deltaX = e.clientX - dragData.startX;
+                const msDelta = deltaX * dragData.msPerPixel;
+
+                // Visualize: Update element position directly for performance
+                dragData.element.style.transform = `translateX(${deltaX}px)`;
+                dragData.element.style.zIndex = 1000;
+            });
+
+          document.addEventListener('mouseup', async (e) => {
+  if (!dragData.active) return;
+
+  const deltaX = e.clientX - dragData.startX;
+  if (Math.abs(deltaX) > 2) {
+    const msDelta = deltaX * dragData.msPerPixel;
+    const newStart = dragData.originalStart + msDelta;
+    const newEnd = dragData.originalEnd + msDelta;
+
+    const init = appState.initiatives.find(i => i.id === dragData.initiativeId);
+    if (init) {
+      const phase = init.phases.find(p => p.id === dragData.phaseId);
+      if (phase) {
+        phase.startDate = new Date(newStart).toISOString();
+        phase.endDate = new Date(newEnd).toISOString();
+        
+        await saveInitiativeToDB(init);
+        render();
+      }
+    }
+  }
+
+  dragData.active = false;
+  if (dragData.element) {
+    dragData.element.style.transform = 'none';
+    dragData.element.classList.remove('dragging');
+    dragData.element = null;
+  }
+});
+
+
+            // --- ENHANCED TIMELINE LOGIC ---
+            function renderTimeline(initiatives, containerId, axisId, isInteractive) {
+                if (initiatives.length === 0) return;
+
+                // 1. Calculate Range
+                const dates = initiatives.flatMap(i => [
+                    new Date(i.startDate).getTime(),
+                    new Date(i.targetDate).getTime(),
+                    ...(i.phases || []).flatMap(p => [new Date(p.startDate).getTime(), new Date(p.endDate).getTime()])
+                ]);
+
+                let minDate = new Date(2026, 0, 1).getTime();
+
+                let maxD = new Date(Math.max(...dates, new Date(new Date().getFullYear(), 11, 31).getTime()));
+                maxD.setMonth(maxD.getMonth() + 1);
+                maxD.setDate(0); // End of month
+                const maxDate = maxD.getTime();
+                const totalMs = maxDate - minDate;
+
+                // 2. Render Axis
+                const axis = document.getElementById(axisId);
+                axis.innerHTML = '';
+
+                let currentTick = new Date(minDate);
+                while (currentTick.getTime() <= maxDate) {
+                    const tickTime = currentTick.getTime();
+                    const pct = ((tickTime - minDate) / totalMs) * 100;
+                    const tick = document.createElement('div');
+                    tick.style.position = 'absolute';
+                    tick.style.left = pct + '%';
+                    tick.style.top = '0';
+                    tick.style.fontSize = '0.7rem';
+                    tick.style.color = 'var(--text-muted)';
+                    tick.style.transform = 'translateX(-50%)';
+                    tick.style.whiteSpace = 'nowrap';
+                    tick.innerText = currentTick.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
+
+                    const mark = document.createElement('div');
+                    mark.style.position = 'absolute';
+                    mark.style.left = pct + '%';
+                    mark.style.bottom = '-4px';
+                    mark.style.height = '4px';
+                    mark.style.borderLeft = '1px solid var(--border-color)';
+
+                    axis.appendChild(tick);
+                    axis.appendChild(mark);
+
+                    // Increment to next month
+                    currentTick.setMonth(currentTick.getMonth() + 1);
+                }
+
+
+                // 3. Render Rows
+                const container = document.getElementById(containerId);
+                container.innerHTML = '';
+                initiatives.forEach(i => {
+                    const startPct = ((new Date(i.startDate).getTime() - minDate) / totalMs) * 100;
+                    const widthPct = ((new Date(i.targetDate).getTime() - new Date(i.startDate).getTime()) / totalMs) * 100;
+
+                    const row = document.createElement('div');
+                    row.className = 'timeline-row';
+                    row.style.alignItems = 'flex-start';
+
+                    // Label
+                    const label = document.createElement('div');
+                    label.className = 'timeline-label';
+                    label.innerText = i.name;
+                    label.style.paddingTop = '8px';
+                    row.appendChild(label);
+
+                    // -- LANE LOGIC --
+                    const sortedPhases = (i.phases || []).slice().sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+                    const lanes = [];
+                    const phaseWithLanes = sortedPhases.map(p => {
+                        const pStart = new Date(p.startDate).getTime();
+                        const pEnd = new Date(p.endDate).getTime();
+                        let laneIndex = -1;
+                        for (let l = 0; l < lanes.length; l++) {
+                            if (pStart >= lanes[l]) {
+                                laneIndex = l;
+                                lanes[l] = pEnd;
+                                break;
+                            }
+                        }
+                        if (laneIndex === -1) {
+                            laneIndex = lanes.length;
+                            lanes.push(pEnd);
+                        }
+                        return { ...p, laneIndex, _start: pStart, _end: pEnd };
+                    });
+
+                    const totalLanes = Math.max(1, lanes.length);
+                    const trackHeight = (totalLanes * LANE_HEIGHT) + 10;
+
+                    // Track
+                    const track = document.createElement('div');
+                    track.className = 'timeline-track';
+                    track.style.height = `${trackHeight}px`;
+
+                    if (isInteractive) {
+                        track.style.cursor = 'crosshair';
+                        track.title = 'Click to add phase at this date';
+
+                        track.onclick = (e) => {
+                            // Only trigger if not ending a drag
+                            if (!dragData.active) {
+                                const rect = track.getBoundingClientRect();
+                                const x = e.clientX - rect.left;
+                                const width = rect.width;
+                                const pct = x / width;
+                                const clickedTime = minDate + (pct * totalMs);
+
+                                openModal(i.id);
+                                addPhase(new Date(clickedTime).toISOString());
+                            }
+                        };
+                    }
+
+                    if (i.phases && i.phases.length > 0) {
+                        // Dim background
+                        const totalBar = document.createElement('div');
+                        totalBar.className = 'timeline-bar';
+                        totalBar.style.left = `${startPct}%`;
+                        totalBar.style.width = `${widthPct}%`;
+                        totalBar.style.top = '5px';
+                        totalBar.style.height = `${(totalLanes * LANE_HEIGHT) - BAR_GAP}px`;
+                        totalBar.style.backgroundColor = 'var(--bg-card)';
+                        totalBar.style.opacity = '0.3';
+                        totalBar.style.pointerEvents = 'none';
+                        track.appendChild(totalBar);
+
+                        phaseWithLanes.forEach(phase => {
+                            const pLeft = ((phase._start - minDate) / totalMs) * 100;
+                            const pWidth = ((phase._end - phase._start) / totalMs) * 100;
+                            const pColor = phase.color || PHASE_COLORS[phase.name] || PHASE_COLORS[phase.name.split(' ')[0]] || DEFAULT_PHASE_COLOR;
+                            const pTop = 5 + (phase.laneIndex * LANE_HEIGHT);
+
+                            const bar = document.createElement('div');
+                            bar.className = 'timeline-bar';
+                            bar.style.left = `${pLeft}%`;
+                            bar.style.width = `${pWidth}%`;
+                            bar.style.top = `${pTop}px`;
+                            bar.style.height = `${BAR_HEIGHT}px`;
+                            bar.style.backgroundColor = pColor;
+                            bar.title = `${phase.name}: ${new Date(phase.startDate).toLocaleDateString()} - ${new Date(phase.endDate).toLocaleDateString()}`;
+                            
+                            // Store phase data for risk detection
+                            bar.dataset.phaseStatus = phase.status || 'pending';
+                            bar.dataset.phaseEndDate = phase.endDate;
+                            bar.dataset.phaseName = phase.name;
+
+                            // Label inside bar
+                            bar.innerText = phase.name;
+                            bar.style.color = 'white';
+                            bar.style.fontSize = '0.65rem';
+                            bar.style.display = 'flex';
+                            bar.style.alignItems = 'center';
+                            bar.style.paddingLeft = '4px';
+                            bar.style.overflow = 'hidden';
+                            bar.style.whiteSpace = 'nowrap';
+                            bar.style.textShadow = '0 1px 2px rgba(0,0,0,0.5)';
+
+                            if (isInteractive) {
+                                // Click to Edit
+                                bar.onclick = (e) => {
+                                    e.stopPropagation();
+                                    if (!dragData.active) openModal(i.id);
+                                }
+
+                                // Drag Start
+                                bar.onmousedown = (e) => {
+                                    if (e.button !== 0) return; // Only left click
+                                    e.stopPropagation();
+
+                                    dragData.active = true;
+                                    dragData.phaseId = phase.id;
+                                    dragData.initiativeId = i.id;
+                                    dragData.startX = e.clientX;
+                                    dragData.originalStart = phase._start;
+                                    dragData.originalEnd = phase._end;
+                                    dragData.element = bar;
+
+                                    // Calculate MS per pixel for this specific track row at this moment
+                                    const rect = track.getBoundingClientRect();
+                                    dragData.msPerPixel = totalMs / rect.width;
+
+                                    bar.classList.add('dragging');
+                                };
+                            } else {
+                                bar.style.cursor = 'default';
+                            }
+                            track.appendChild(bar);
+                        });
+
+                    } else {
+                        // Fallback single bar
+                        let color = 'var(--text-muted)';
+                        if (i.status === 'active') color = 'var(--accent-color)';
+                        if (i.status === 'completed') color = 'var(--success-color)';
+                        if (i.status === 'risk') color = 'var(--risk-color)';
+
+                        const bar = document.createElement('div');
+                        bar.className = 'timeline-bar';
+                        bar.style.left = `${startPct}%`;
+                        bar.style.width = `${widthPct}%`;
+                        bar.style.top = '5px';
+                        bar.style.height = `${BAR_HEIGHT}px`;
+                        bar.style.backgroundColor = color;
+                        bar.style.pointerEvents = 'none'; // Click through to track
+                        track.appendChild(bar);
+                    }
+
+                    row.appendChild(track);
+                    container.appendChild(row);
+                });
+				if (isInteractive) {
+        addTimelineRiskIndicators();
+    }
+				
+				
+				// ADD THESE TWO LINES AT THE END:
+    addRiskIndicators();
+    setTimeout(addTimelineRiskIndicators, 100); // Small delay to ensure timeline is rendered
+
+            }
+
+            // --- JIRA INTEGRATION & INIT ---
+
+
+
+            async function checkDatabase() {
+                const statusDiv = document.getElementById('sync-status');
+                try {
+                    statusDiv.innerText = 'Checking database...';
+                    statusDiv.style.color = 'var(--text-muted)';
+                    
+                    // Check if IndexedDB is available
+                    if (!window.indexedDB) {
+                        statusDiv.innerText = '❌ IndexedDB not supported in this browser';
+                        statusDiv.style.color = 'var(--danger-color)';
+                        return;
+                    }
+                    
+                    // Check if database exists and has data
+                    if (!db) {
+                        await initDB();
+                    }
+                    
+                    const initiatives = await getAllInitiatives();
+                    const snapshots = await getAllSnapshotsFromDB();
+                    
+                    console.log('📊 Database Status:', {
+                        dbName: db.name,
+                        version: db.version,
+                        initiatives: initiatives.length,
+                        snapshots: snapshots.length,
+                        stores: Array.from(db.objectStoreNames)
+                    });
+                    
+                    statusDiv.innerText = `✅ DB OK: ${initiatives.length} initiatives, ${snapshots.length} snapshots`;
+                    statusDiv.style.color = 'var(--success-color)';
+                    
+                    // Also check localStorage
+                    console.log('💾 LocalStorage:', {
+                        domain: localStorage.getItem('jira_domain'),
+                        email: localStorage.getItem('jira_email'),
+                        hasToken: !!localStorage.getItem('jira_token'),
+                        jql: localStorage.getItem('jira_jql')
+                    });
+                    
+                } catch (error) {
+                    console.error('Database check failed:', error);
+                    statusDiv.innerText = '❌ Database error: ' + error.message;
+                    statusDiv.style.color = 'var(--danger-color)';
+                }
+            }
+
+            function openSettings() {
+                document.getElementById('jira-domain').value = localStorage.getItem('jira_domain') || '';
+                document.getElementById('jira-email').value = localStorage.getItem('jira_email') || '';
+                document.getElementById('jira-token').value = localStorage.getItem('jira_token') || '';
+                document.getElementById('jira-jql').value = localStorage.getItem('jira_jql') || 'project in ("IT Portfolio") and "Technology Squad[Dropdown]" in ("Platform Development & Integration")';
+                document.getElementById('settings-modal').classList.remove('hidden');
+                document.getElementById('sync-status').innerText = '';
+                
+                // Update storage status indicators
+                updateStorageStatus();
+            }
+
+            function closeSettings() {
+                document.getElementById('settings-modal').classList.add('hidden');
+            }
+
+
+            function clearData() {
+                if (confirm('Are you sure you want to delete all local data? This cannot be undone.')) {
+                    // Clear IndexedDB
+                    indexedDB.deleteDatabase('InitiativeTrackerDB');
+                    
+                    // Clear localStorage
+                    localStorage.removeItem('jira_domain');
+                    localStorage.removeItem('jira_email');
+                    localStorage.removeItem('jira_token');
+                    localStorage.removeItem('jira_jql');
+                    localStorage.removeItem('retro_astro_initiatives_vanilla');
+                    localStorage.removeItem('retro_astro_snapshots_vanilla');
+                    
+                    alert('All data cleared! The page will reload.');
+                    location.reload();
+                }
+            }
+
+            async function syncJira() {
+    const domain = document.getElementById('jira-domain').value.replace('https://', '').replace(/\/.*/, '');
+    const email = document.getElementById('jira-email').value;
+    const token = document.getElementById('jira-token').value;
+    const jql = document.getElementById('jira-jql').value;
+    const statusDiv = document.getElementById('sync-status');
+
+    if (!domain || !email || !token) {
+        statusDiv.innerText = 'Error: Missing fields';
+        statusDiv.style.color = 'var(--danger-color)';
+        return;
+    }
+
+    localStorage.setItem('jira_domain', domain);
+    localStorage.setItem('jira_email', email);
+    localStorage.setItem('jira_token', token);
+    localStorage.setItem('jira_jql', jql);
+
+    statusDiv.innerText = 'Connecting via Proxy...';
+    statusDiv.style.color = 'var(--text-muted)';
+
+    try {
+        // 1. Resolve field IDs
+        statusDiv.innerText = 'Resolving Jira Fields...';
+        const fieldRes = await fetch('http://localhost:8080/proxy', {
+            method: 'GET',
+            headers: {
+                'x-target-url': `https://${domain}/rest/api/3/field`,
+                'Authorization': 'Basic ' + btoa(email + ':' + token)
+            }
+        });
+        
+        if (!fieldRes.ok) {
+            const errText = await fieldRes.text();
+            throw new Error(`Jira Field Error (${fieldRes.status}): ${errText.substring(0, 150)}`);
+        }
+        
+        const allFields = await fieldRes.json();
+
+        if (!Array.isArray(allFields)) {
+            console.error("Jira fields response is not an array:", allFields);
+            throw new Error("Invalid Jira metadata response.");
+        }
+
+        console.log("All available Jira fields:", allFields.map(f => f.name));
+
+        // Find field IDs
+        const keyInitiativeField = allFields.find(f => f.name && f.name.toLowerCase().includes("key initiative"));
+        const techSquadField = allFields.find(f => f.name && f.name.toLowerCase().includes("technology squad"));
+        
+        const keyInitiativeFieldId = keyInitiativeField ? keyInitiativeField.id : null;
+        const techSquadFieldId = techSquadField ? techSquadField.id : null;
+
+        console.log("Key Initiative Field:", keyInitiativeFieldId);
+        console.log("Technology Squad Field:", techSquadFieldId);
+
+        // 2. Fetch main JQL results
+        statusDiv.innerText = 'Fetching Jira data...';
+        console.log('🔍 Running JQL Query:', jql);
+        const targetUrl = `https://${domain}/rest/api/3/search/jql`;
+        const fetchFields = ["summary", "assignee", "duedate", "created", "status", "project"];
+        if (keyInitiativeFieldId) fetchFields.push(keyInitiativeFieldId);
+        if (techSquadFieldId) fetchFields.push(techSquadFieldId);
+
+        const payload = {
+            jql: jql,
+            fields: fetchFields,
+            maxResults: 100
+        };
+
+        const response = await fetch('http://localhost:8080/proxy', {
+            method: 'POST',
+            headers: {
+                'x-target-url': targetUrl,
+                'Authorization': 'Basic ' + btoa(email + ':' + token),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Proxy Error (${response.status}): ${errText.substring(0, 150)}`);
+        }
+
+        const data = await response.json();
+        console.log('📊 JIRA Response:', {
+            total: data.total,
+            issueCount: data.issues ? data.issues.length : 0,
+            maxResults: data.maxResults
+        });
+        
+        if (!data.issues || data.issues.length === 0) {
+            console.warn('⚠️ No issues returned from JQL query:', jql);
+            statusDiv.innerText = `Warning: No issues found matching query: "${jql}"`;
+            statusDiv.style.color = 'var(--warning-color)';
+            return;
+        }
+
+        // 3. Fetch Key Initiatives using specific JQL
+        statusDiv.innerText = 'Identifying Key Initiatives...';
+        const keyInitiativeJQL = 'project in ("IT Portfolio") and "Technology Squad[Dropdown]" in ("Platform Development & Integration") and "Key Initiative" is not EMPTY';
+        
+        const keyInitPayload = {
+            jql: keyInitiativeJQL,
+            fields: ["key"],
+            maxResults: 500
+        };
+
+        const keyInitResponse = await fetch('http://localhost:8080/proxy', {
+            method: 'POST',
+            headers: {
+                'x-target-url': targetUrl,
+                'Authorization': 'Basic ' + btoa(email + ':' + token),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(keyInitPayload)
+        });
+
+        let keyInitiativeKeys = new Set();
+        if (keyInitResponse.ok) {
+            const keyInitData = await keyInitResponse.json();
+            if (keyInitData.issues) {
+                keyInitiativeKeys = new Set(keyInitData.issues.map(issue => issue.key));
+                console.log("Key Initiative IDs:", Array.from(keyInitiativeKeys));
+            }
+        }
+
+        // 4. Map Data
+        statusDiv.innerText = 'Processing Jira data...';
+        const mappedInitiatives = data.issues.map(issue => {
+            const f = issue.fields;
+
+            // Status Mapping
+            let status = 'active';
+            const sName = f.status ? f.status.name.toLowerCase() : '';
+            if (sName.includes('done') || sName.includes('closed') || sName.includes('complete')) status = 'completed';
+            else if (sName.includes('plan') || sName.includes('backlog')) status = 'planned';
+            else if (sName.includes('risk') || sName.includes('block')) status = 'risk';
+
+            // Date Logic
+            const start = f.created;
+            const target = f.duedate ? f.duedate : new Date(new Date(start).getTime() + 864e5 * 30).toISOString();
+
+            // Determine if Key Initiative based on JQL results
+            const isKeyInitiative = keyInitiativeKeys.has(issue.key);
+            const keyInitiativeVal = isKeyInitiative ? 'Yes' : 'No';
+
+            // Extract Technology Squad for categories
+            let categories = [];
+            if (techSquadFieldId && f[techSquadFieldId]) {
+                const squadValue = f[techSquadFieldId];
+                if (typeof squadValue === 'object' && squadValue.value) {
+                    categories.push(squadValue.value);
+                } else if (typeof squadValue === 'string') {
+                    categories.push(squadValue);
+                }
+            }
+
+            return {
+                id: issue.key,
+                name: f.summary,
+                owner: f.assignee ? f.assignee.displayName : 'Unassigned',
+                keyInitiative: keyInitiativeVal,
+                status: status,
+                startDate: start,
+                targetDate: target,
+                categories: categories,
+                tags: [],
+                phases: []
+            };
+        });
+
+        // 5. Save to database
+        statusDiv.innerText = 'Saving to database...';
+        let count = 0;
+        for (const newItem of mappedInitiatives) {
+            try {
+                await saveInitiativeToDB(newItem);
+                count++;
+            } catch (error) {
+                console.error(`Failed to save ${newItem.id}:`, error);
+            }
+        }
+
+        await loadState();
+        
+        console.log('Initiatives loaded after sync:', appState.initiatives.length);
+        render(); // Render immediately to show data
+
+        statusDiv.innerText = `Success! Synced ${count} initiatives (${keyInitiativeKeys.size} key initiatives).`;
+        statusDiv.style.color = 'var(--success-color)';
+
+        setTimeout(() => {
+            closeSettings();
+        }, 2000);
+
+    } catch (err) {
+        console.error(err);
+        statusDiv.innerText = 'Failed: ' + err.message;
+        statusDiv.style.color = 'var(--danger-color)';
+        if (err.message.includes('Failed to fetch')) {
+            statusDiv.innerText += ' (Is proxy.js running on port 8080?)';
+        }
+    }
+}
+
+            // Init
+           // Production-Ready Initialization
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        // STEP 1: Initialize Production Mode (checks Supabase or falls back to IndexedDB)
+        await initializeProduction();
+        
+        // STEP 2: Load data
+        await loadState();
+        
+        // STEP 3: Initialize features
+        await initRiskDetection();
+        requestNotificationPermission();
+        
+        // STEP 4: Update UI
+        updateStorageStatus();
+        
+        // STEP 5: Log status
+        console.log('✅ Portfolio Tracker Initialized');
+        console.log(`📊 Loaded ${appState.initiatives.length} initiatives`);
+        console.log(`💾 Storage: ${useSupabase ? 'Cloud (Supabase)' : 'Local (IndexedDB)'}`);
+        console.log('⚠️ Risk detection: Active');
+        
+        if (!useSupabase) {
+            console.log('');
+            console.log('💡 TIP: Configure Supabase credentials to enable:');
+            console.log('   • Cloud storage & backup');
+            console.log('   • Multi-device sync');
+            console.log('   • Team collaboration');
+            console.log('');
+        }
+        
+    } catch (error) {
+        console.error('❌ Initialization failed:', error);
+        alert('Failed to initialize app: ' + error.message);
+    }
+    
+    if (appState.initiatives.length === 0) {
+        // seedData();
+    }
+});
+
+// Add this to your standalone.html <script> section
+
+// Risk Detection System
+function detectRisks() {
+    const now = new Date();
+    const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+    
+    let autoUpdatedCount = 0;
+    let warnings = [];
+    
+    appState.initiatives.forEach(initiative => {
+        if (!initiative.phases || initiative.phases.length === 0) return;
+        
+        let hasOverduePhase = false;
+        let hasApproachingDeadline = false;
+        let overduePhases = [];
+        let approachingPhases = [];
+        
+        initiative.phases.forEach(phase => {
+            const endDate = new Date(phase.endDate);
+            
+            // Check if phase is overdue (past end date and not completed)
+            if (endDate < now && phase.status !== 'completed') {
+                hasOverduePhase = true;
+                const daysOverdue = Math.ceil((now - endDate) / (1000 * 60 * 60 * 24));
+                overduePhases.push({
+                    name: phase.name,
+                    endDate: phase.endDate,
+                    daysOverdue: daysOverdue
+                });
+            }
+            
+            // Check if deadline is approaching (within 5 days and not completed)
+            if (endDate >= now && endDate <= fiveDaysFromNow && phase.status !== 'completed') {
+                hasApproachingDeadline = true;
+                const daysUntil = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+                approachingPhases.push({
+                    name: phase.name,
+                    endDate: phase.endDate,
+                    daysUntil: daysUntil
+                });
+            }
+        });
+        
+        // Auto-update to "risk" if has overdue phases
+        if (hasOverduePhase && initiative.status !== 'risk' && initiative.status !== 'completed') {
+            initiative.status = 'risk';
+            initiative._autoRisk = true; // Mark as auto-updated
+            autoUpdatedCount++;
+        }
+        
+        // Store risk info for display
+        if (hasOverduePhase || hasApproachingDeadline) {
+            initiative._riskInfo = {
+                hasOverduePhase,
+                hasApproachingDeadline,
+                overduePhases,
+                approachingPhases
+            };
+            
+            warnings.push({
+                initiative: initiative,
+                overduePhases: overduePhases,
+                approachingPhases: approachingPhases
+            });
+        } else {
+            delete initiative._riskInfo;
+        }
+    });
+    
+    return {
+        autoUpdatedCount,
+        warnings
+    };
+}
+
+// Save auto-detected risks to database
+async function saveRiskDetection() {
+    const result = detectRisks();
+    
+    if (result.autoUpdatedCount > 0) {
+        // Save all initiatives that were auto-updated to risk
+        for (const initiative of appState.initiatives) {
+            if (initiative._autoRisk) {
+                try {
+                    await saveInitiativeToDB(initiative);
+                    delete initiative._autoRisk; // Clean up marker
+                } catch (error) {
+                    console.error(`Failed to save risk status for ${initiative.id}:`, error);
+                }
+            }
+        }
+        
+        console.log(`⚠️ Auto-updated ${result.autoUpdatedCount} initiatives to "At Risk" status`);
+    }
+    
+    return result;
+}
+
+// Show risk notifications
+function showRiskNotifications(warnings) {
+    if (warnings.length === 0) return;
+    
+    let overdueCount = warnings.filter(w => w.overduePhases.length > 0).length;
+    let approachingCount = warnings.filter(w => w.approachingPhases.length > 0).length;
+    
+    if (overdueCount > 0 || approachingCount > 0) {
+        let message = '⚠️ DEADLINE ALERTS:\n\n';
+        
+        if (overdueCount > 0) {
+            message += `🚨 ${overdueCount} initiative(s) with OVERDUE phases\n`;
+        }
+        if (approachingCount > 0) {
+            message += `⏰ ${approachingCount} initiative(s) with deadlines in next 5 days\n`;
+        }
+        
+        message += '\nCheck Dashboard for details.';
+        
+        // Show browser notification if permitted
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Portfolio Tracker Alert", {
+                body: message,
+                icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>⚠️</text></svg>"
+            });
+        }
+        
+        // Show in-app alert (can be customized to a banner)
+        console.warn(message);
+    }
+}
+
+// Add visual indicators to table rows
+function addRiskIndicators() {
+    // This is called during render() to add visual warnings
+    const tbody = document.getElementById('table-body');
+    if (!tbody) return;
+    
+    const rows = tbody.querySelectorAll('tr');
+    rows.forEach((row, index) => {
+        const initiative = appState.initiatives.find(i => {
+            // Match by initiative name or ID in the row
+            return row.textContent.includes(i.id);
+        });
+        
+        if (initiative && initiative._riskInfo) {
+            // Add warning badge
+            const ownerCell = row.cells[2]; // Owner column
+            if (ownerCell && !ownerCell.querySelector('.risk-badge')) {
+                const badge = document.createElement('span');
+                badge.className = 'risk-badge';
+                badge.style.cssText = `
+                    display: inline-block;
+                    margin-left: 8px;
+                    padding: 2px 6px;
+                    background: #fef3c7;
+                    color: #92400e;
+                    border: 1px solid #f59e0b;
+                    border-radius: 4px;
+                    font-size: 0.7rem;
+                    font-weight: bold;
+                `;
+                
+                if (initiative._riskInfo.hasOverduePhase) {
+                    badge.textContent = `🚨 ${initiative._riskInfo.overduePhases.length} Overdue`;
+                    badge.style.background = '#fee2e2';
+                    badge.style.color = '#dc2626';
+                    badge.style.borderColor = '#ef4444';
+                } else if (initiative._riskInfo.hasApproachingDeadline) {
+                    badge.textContent = `⏰ ${initiative._riskInfo.approachingPhases.length} Due Soon`;
+                }
+                
+                ownerCell.appendChild(badge);
+            }
+            
+            // Highlight row
+            if (initiative._riskInfo.hasOverduePhase) {
+                row.style.background = 'linear-gradient(90deg, rgba(239, 68, 68, 0.05) 0%, transparent 100%)';
+                row.style.borderLeft = '4px solid #ef4444';
+            } else if (initiative._riskInfo.hasApproachingDeadline) {
+                row.style.background = 'linear-gradient(90deg, rgba(245, 158, 11, 0.05) 0%, transparent 100%)';
+                row.style.borderLeft = '4px solid #f59e0b';
+            }
+        }
+    });
+}
+
+// Add to timeline bars
+function addTimelineRiskIndicators() {
+    // Called during renderTimeline to add visual warnings to phase bars
+    const container = document.getElementById('timeline-rows');
+    if (!container) return;
+    
+    const now = new Date();
+    const fiveDaysFromNow = new Date(now.getTime() + (5 * 24 * 60 * 60 * 1000));
+    
+    container.querySelectorAll('.timeline-bar').forEach(bar => {
+        // Skip if no phase data (might be initiative bar, not phase bar)
+        if (!bar.dataset.phaseEndDate) return;
+        
+        const phaseStatus = bar.dataset.phaseStatus;
+        const endDate = new Date(bar.dataset.phaseEndDate);
+        const phaseName = bar.dataset.phaseName || bar.textContent.trim();
+        
+        // Only flag phases that are NOT completed
+        const isNotCompleted = phaseStatus !== 'completed';
+        
+        // Add warning indicator for overdue phases (past due date and not completed)
+        if (endDate < now && isNotCompleted) {
+            bar.style.border = '2px solid #ef4444';
+            bar.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.5)';
+            bar.style.position = 'relative';
+            
+            // Add pulsing animation
+            bar.style.animation = 'pulse 2s infinite';
+            
+            // Calculate days overdue
+            const daysOverdue = Math.ceil((now - endDate) / (1000 * 60 * 60 * 24));
+            
+            // Add overdue badge
+            const badge = document.createElement('div');
+            badge.textContent = '🚨';
+            badge.title = `OVERDUE by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''}! Phase: ${phaseName}`;
+            badge.style.cssText = `
+                position: absolute;
+                right: 4px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 0.8rem;
+                z-index: 10;
+                cursor: help;
+            `;
+            bar.appendChild(badge);
+            
+            console.log(`⚠️ OVERDUE PHASE: "${phaseName}" - ${daysOverdue} days overdue (Status: ${phaseStatus})`);
+        }
+        // Add warning for approaching deadline (within 5 days and not completed)
+        else if (endDate <= fiveDaysFromNow && isNotCompleted) {
+            bar.style.border = '2px solid #f59e0b';
+            bar.style.boxShadow = '0 0 8px rgba(245, 158, 11, 0.4)';
+            bar.style.position = 'relative';
+            
+            // Calculate days remaining
+            const daysRemaining = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+            
+            // Add warning badge
+            const badge = document.createElement('div');
+            badge.textContent = '⏰';
+            badge.title = `Due in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}! Phase: ${phaseName}`;
+            badge.style.cssText = `
+                position: absolute;
+                right: 4px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-size: 0.8rem;
+                z-index: 10;
+                cursor: help;
+            `;
+            bar.appendChild(badge);
+            
+            console.log(`⏰ APPROACHING DEADLINE: "${phaseName}" - ${daysRemaining} days remaining (Status: ${phaseStatus})`);
+        }
+    });
+}
+
+// Run risk detection on page load and periodically
+async function initRiskDetection() {
+    // Run immediately
+    const result = await saveRiskDetection();
+    await loadState();
+    showRiskNotifications(result.warnings);
+    
+    // Run every 5 minutes
+    setInterval(async () => {
+        const result = await saveRiskDetection();
+        await loadState();
+        showRiskNotifications(result.warnings);
+    }, 5 * 60 * 1000);
+}
+
+// Request notification permission
+function requestNotificationPermission() {
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+}
+
+// Add pulse and shake animation CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-2px); }
+        20%, 40%, 60%, 80% { transform: translateX(2px); }
+    }
+    
+    .phase-overdue {
+        background: rgba(239, 68, 68, 0.05) !important;
+        border-left: 4px solid var(--danger-color) !important;
+        animation: shake 0.5s ease-in-out;
+    }
+    
+    .phase-overdue:hover {
+        background: rgba(239, 68, 68, 0.1) !important;
+    }
+    
+    .phase-overdue td {
+        border-top: 2px solid var(--danger-color);
+        border-bottom: 2px solid var(--danger-color);
+    }
+    
+    .phase-overdue td:first-child {
+        border-left: none; /* Already has left border on tr */
+    }
+    
+    .phase-overdue td:last-child {
+        border-right: 2px solid var(--danger-color);
+    }
+    
+    .phase-overdue input,
+    .phase-overdue select {
+        border-color: var(--danger-color) !important;
+    }
+`;
+document.head.appendChild(style);
+
+// INTEGRATE INTO EXISTING CODE:
+// 1. Call initRiskDetection() on page load (add to your DOMContentLoaded handler)
+// 2. Call addRiskIndicators() at the end of your render() function
+// 3. Call addTimelineRiskIndicators() at the end of renderTimeline() function
+// 4. Call requestNotificationPermission() on first user interaction
+            
+        </script>
+    </div>
+    </div>
+</body>
+
+</html>
