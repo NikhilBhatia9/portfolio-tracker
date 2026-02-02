@@ -789,6 +789,11 @@
                         <h3>Active</h3>
                         <div class="value" style="color:var(--accent-color)" id="m-active">0</div>
                     </div>
+                    <div class="card metric-card clickable" id="filter-planned"
+                        style="border-top: 3px solid var(--text-secondary)" onclick="setFilter('planned')">
+                        <h3>Planned</h3>
+                        <div class="value" id="m-planned">0</div>
+                    </div>
                     <div class="card metric-card clickable" id="filter-risk"
                         style="border-top: 3px solid var(--risk-color)" onclick="setFilter('risk')">
                         <h3>At Risk</h3>
@@ -2337,10 +2342,11 @@ const loadState = async () => {
                 document.getElementById('m-total').innerText = initiatives.length;
                 document.getElementById('m-completed').innerText = initiatives.filter(i => i.status === 'completed').length;
                 document.getElementById('m-active').innerText = initiatives.filter(i => i.status === 'active' || i.status === 'risk').length;
+                document.getElementById('m-planned').innerText = initiatives.filter(i => i.status && i.status.toLowerCase() === 'planned').length;
                 document.getElementById('m-risk').innerText = initiatives.filter(i => i.status === 'risk').length;
 
                 // Update Active Filter Class
-                ['all', 'completed', 'active', 'risk'].forEach(s => {
+                ['all', 'completed', 'active', 'planned', 'risk'].forEach(s => {
                     const el = document.getElementById(`filter-${s}`);
                     if (el) el.classList.toggle('active', appState.filterStatus === s);
                 });
@@ -2361,12 +2367,27 @@ const loadState = async () => {
                     .filter(i => {
                         if (appState.filterStatus === 'all') return true;
                         if (appState.filterStatus === 'active') return i.status === 'active' || i.status === 'risk';
+                        if (appState.filterStatus === 'planned') return i.status && i.status.toLowerCase() === 'planned';
                         return i.status === appState.filterStatus;
                     })
                     .filter(i => appState.filterCategory === 'all' || (i.categories && i.categories.includes(appState.filterCategory)));
 
                 // Apply Sort
                 filteredInitiatives.sort((a, b) => {
+                    // Default key-first sort: prioritize keyInitiative === true
+                    // Apply as stable tie-breaker when on default sort (sortKey === 'name' and sortOrder === 'asc')
+                    const isDefaultSort = appState.sortKey === 'name' && appState.sortOrder === 'asc';
+                    
+                    if (isDefaultSort) {
+                        // Check keyInitiative first
+                        const aIsKey = a.keyInitiative === 'Yes' || (a.keyInitiative && a.keyInitiative !== 'No');
+                        const bIsKey = b.keyInitiative === 'Yes' || (b.keyInitiative && b.keyInitiative !== 'No');
+                        
+                        if (aIsKey !== bIsKey) {
+                            return aIsKey ? -1 : 1;
+                        }
+                    }
+                    
                     let valA = a[appState.sortKey];
                     let valB = b[appState.sortKey];
 
