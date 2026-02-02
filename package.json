@@ -1,0 +1,18 @@
+{
+  "name": "portfolio-tracker-email-scheduler",
+  "version": "1.0.0",
+  "description": "Email scheduler service for Portfolio Tracker",
+  "main": "email-scheduler.js",
+  "scripts": {
+    "start": "node email-scheduler.js",
+    "scheduler": "node email-scheduler.js"
+  },
+  "keywords": ["portfolio", "tracker", "email", "scheduler"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "nodemailer": "^6.9.7"
+  }
+}
