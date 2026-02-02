@@ -1620,10 +1620,10 @@ Default phases added:
       },
       keyInitiatives: initiatives.filter(i => i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')).length,
       approachingDeadline: initiatives.filter(i => {
-        const daysUntilTarget = Math.ceil((new Date(i.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+        const daysUntilTarget = Math.ceil((new Date(i.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
         return daysUntilTarget > 0 && daysUntilTarget <= 14;
       }).length,
-      overdue: initiatives.filter(i => new Date(i.targetDate) < new Date() && i.status !== 'completed').length
+      overdue: initiatives.filter(i => new Date(i.targetDate).getTime() < new Date().getTime() && i.status !== 'completed').length
     };
     
     const response = await fetch('http://localhost:3001/api/export-data', {
@@ -2313,7 +2313,7 @@ const loadState = async () => {
                     const oneWeekMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
                     
                     // If no last snapshot or it's been more than a week
-                    if (!lastSnapshotDate || (now - new Date(lastSnapshotDate)) >= oneWeekMs) {
+                    if (!lastSnapshotDate || (now.getTime() - new Date(lastSnapshotDate).getTime()) >= oneWeekMs) {
                         console.log('📸 Creating automatic weekly snapshot...');
                         const snapshot = await createSnapshotInDB('Automatic weekly snapshot');
                         
@@ -3519,11 +3519,6 @@ async function initRiskDetection() {
         await loadState();
         showRiskNotifications(result.warnings);
     }, 5 * 60 * 1000);
-    
-    // Check for weekly snapshots daily at app startup and every 24 hours
-    setInterval(async () => {
-        await checkAndCreateWeeklySnapshot();
-    }, 24 * 60 * 60 * 1000); // Check every 24 hours
 }
 
 // Request notification permission
