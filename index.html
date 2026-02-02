@@ -2374,7 +2374,7 @@ const loadState = async () => {
 
                 // Apply Sort
                 filteredInitiatives.sort((a, b) => {
-                    // Default key-first sort: prioritize keyInitiative === true
+                    // Default key-first sort: prioritize keyInitiative === 'Yes' (or any truthy value that's not 'No')
                     // Apply as stable tie-breaker when on default sort (sortKey === 'name' and sortOrder === 'asc')
                     const isDefaultSort = appState.sortKey === 'name' && appState.sortOrder === 'asc';
                     
