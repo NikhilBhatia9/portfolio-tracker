@@ -207,6 +207,31 @@
             border-bottom: 1px solid var(--border-color);
         }
 
+        /* Dashboard column width adjustments for better readability */
+        #header-id {
+            width: 8%;
+        }
+
+        #header-name {
+            width: 35%;
+        }
+
+        #header-owner {
+            width: 15%;
+        }
+
+        #header-keyInitiative {
+            width: 10%;
+        }
+
+        #header-targetDate {
+            width: 15%;
+        }
+
+        #header-status {
+            width: 12%;
+        }
+
         th {
             color: var(--text-muted);
             font-weight: normal;
@@ -892,14 +917,24 @@
                         </div>
                         <div class="form-group">
                             <label style="font-size: 0.75rem;">Status</label>
-                            <select id="filter-tl-status" style="font-size: 0.8rem; padding: 4px;"
-                                onchange="updateTimelineFilters('status', this.value)">
-                                <option value="all">All</option>
-                                <option value="planned">Planned</option>
-                                <option value="active">Active</option>
-                                <option value="risk">Risk</option>
-                                <option value="completed">Completed</option>
-                            </select>
+                            <div id="filter-tl-status" style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.75rem;">
+                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                                    <input type="checkbox" value="planned" onchange="updateTimelineStatusFilter()" />
+                                    <span>Planned</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                                    <input type="checkbox" value="active" onchange="updateTimelineStatusFilter()" />
+                                    <span>Active</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                                    <input type="checkbox" value="risk" onchange="updateTimelineStatusFilter()" />
+                                    <span>Risk</span>
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
+                                    <input type="checkbox" value="completed" onchange="updateTimelineStatusFilter()" />
+                                    <span>Completed</span>
+                                </label>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label style="font-size: 0.75rem;">Before Date</label>
@@ -1553,20 +1588,63 @@ Default phases added:
     `);
 }
 		
+		/**
+		 * Export Data for Email Scheduler
+		 * 
+		 * This function exports initiative data to an external email scheduler service.
+		 * The service should be running on http://localhost:3001/api/export-data
+		 * 
+		 * For weekly automated emails:
+		 * 1. Set up a cron job or scheduler to call this function weekly
+		 * 2. Or use the email scheduler service with its own scheduling mechanism
+		 * 3. The service should format and send status summary emails
+		 * 
+		 * Email Content should include:
+		 * - Summary of initiatives by status (Active, Risk, Planned, Completed)
+		 * - List of key initiatives
+		 * - Initiatives approaching target dates
+		 * - Overdue initiatives
+		 */
 		async function exportDataForEmail() {
   try {
     const initiatives = await getAllInitiatives();
     
+    // Prepare summary statistics for email
+    const summary = {
+      total: initiatives.length,
+      byStatus: {
+        active: initiatives.filter(i => i.status === 'active').length,
+        risk: initiatives.filter(i => i.status === 'risk').length,
+        planned: initiatives.filter(i => i.status === 'planned').length,
+        completed: initiatives.filter(i => i.status === 'completed').length
+      },
+      keyInitiatives: initiatives.filter(i => i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')).length,
+      approachingDeadline: initiatives.filter(i => {
+        const daysUntilTarget = Math.ceil((new Date(i.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        return daysUntilTarget > 0 && daysUntilTarget <= 14;
+      }).length,
+      overdue: initiatives.filter(i => new Date(i.targetDate).getTime() < new Date().getTime() && i.status !== 'completed').length
+    };
+    
     const response = await fetch('http://localhost:3001/api/export-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initiatives, exportDate: new Date().toISOString() })
+      body: JSON.stringify({ 
+        initiatives, 
+        summary,
+        exportDate: new Date().toISOString() 
+      })
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const result = await response.json();
-    alert(result.success ? '✅ Data exported!' : '❌ Export failed');
+    alert(result.success ? '✅ Data exported for email!' : '❌ Export failed: ' + (result.error || 'Unknown error'));
   } catch (error) {
-    alert('❌ Is email scheduler running?');
+    console.error('Email export error:', error);
+    alert('❌ Email scheduler service not available!\n\nPlease ensure the email service is running on http://localhost:3001\n\nFor setup instructions, see the documentation.');
   }
 }
 // ========== IndexedDB Database Layer ==========
@@ -1711,7 +1789,7 @@ function getRandomModernColor() {
                     name: '',
                     key: false,
                     owner: '',
-                    status: 'all',
+                    status: [],
                     targetDate: ''
                 }
             };
@@ -2226,6 +2304,38 @@ const loadState = async () => {
   }
 }
 
+            // Check and create weekly snapshots automatically
+            async function checkAndCreateWeeklySnapshot() {
+                try {
+                    const lastSnapshotKey = 'last_weekly_snapshot_date';
+                    const lastSnapshotDate = localStorage.getItem(lastSnapshotKey);
+                    const now = new Date();
+                    const oneWeekMs = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+                    
+                    // If no last snapshot or it's been more than a week
+                    if (!lastSnapshotDate || (now.getTime() - new Date(lastSnapshotDate).getTime()) >= oneWeekMs) {
+                        console.log('📸 Creating automatic weekly snapshot...');
+                        const snapshot = await createSnapshotInDB('Automatic weekly snapshot');
+                        
+                        appState.snapshots.unshift({
+                            id: snapshot.id.toString(),
+                            date: snapshot.created_at,
+                            initiatives: JSON.parse(snapshot.data),
+                            note: snapshot.note
+                        });
+                        
+                        localStorage.setItem(lastSnapshotKey, now.toISOString());
+                        console.log('✅ Weekly snapshot created successfully');
+                        render();
+                    } else {
+                        const nextSnapshotDate = new Date(new Date(lastSnapshotDate).getTime() + oneWeekMs);
+                        console.log(`📅 Next automatic snapshot: ${nextSnapshotDate.toLocaleString()}`);
+                    }
+                } catch (error) {
+                    console.error('❌ Error creating weekly snapshot:', error);
+                }
+            }
+
             function switchView(viewName) {
                 document.getElementById('view-current').classList.toggle('hidden', viewName !== 'current');
                 document.getElementById('view-timeline').classList.toggle('hidden', viewName !== 'timeline');
@@ -2336,19 +2446,31 @@ const loadState = async () => {
                 render();
             }
 
+            function updateTimelineStatusFilter() {
+                // Collect all checked status checkboxes
+                const checkboxes = document.querySelectorAll('#filter-tl-status input[type="checkbox"]');
+                const selectedStatuses = Array.from(checkboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                appState.timelineFilters.status = selectedStatuses;
+                render();
+            }
+
             function clearTimelineFilters() {
                 appState.timelineFilters = {
                     name: '',
                     key: false,
                     owner: '',
-                    status: 'all',
+                    status: [],
                     targetDate: ''
                 };
                 // Reset UI inputs
                 document.getElementById('filter-tl-name').value = '';
                 document.getElementById('filter-tl-key').checked = false;
                 document.getElementById('filter-tl-owner').value = '';
-                document.getElementById('filter-tl-status').value = 'all';
+                // Uncheck all status checkboxes
+                const statusCheckboxes = document.querySelectorAll('#filter-tl-status input[type="checkbox"]');
+                statusCheckboxes.forEach(cb => cb.checked = false);
                 document.getElementById('filter-tl-date').value = '';
                 render();
             }
@@ -2471,7 +2593,7 @@ const loadState = async () => {
                     const matchName = i.name.toLowerCase().includes(tl.name.toLowerCase());
                     const matchKey = !tl.key ? true : ((i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')));
                     const matchOwner = i.owner.toLowerCase().includes(tl.owner.toLowerCase());
-                    const matchStatus = tl.status === 'all' || i.status === tl.status;
+                    const matchStatus = tl.status.length === 0 || tl.status.includes(i.status);
                     const matchDate = !tl.targetDate || new Date(i.targetDate) <= new Date(tl.targetDate);
                     return matchName && matchKey && matchOwner && matchStatus && matchDate;
                 });
@@ -3088,14 +3210,18 @@ window.addEventListener('DOMContentLoaded', async () => {
         await initRiskDetection();
         requestNotificationPermission();
         
-        // STEP 4: Update UI
+        // STEP 4: Check and create weekly snapshot if needed
+        await checkAndCreateWeeklySnapshot();
+        
+        // STEP 5: Update UI
         updateStorageStatus();
         
-        // STEP 5: Log status
+        // STEP 6: Log status
         console.log('✅ Portfolio Tracker Initialized');
         console.log(`📊 Loaded ${appState.initiatives.length} initiatives`);
         console.log(`💾 Storage: ${useSupabase ? 'Cloud (Supabase)' : 'Local (IndexedDB)'}`);
         console.log('⚠️ Risk detection: Active');
+        console.log('📸 Weekly snapshot: Enabled');
         
         if (!useSupabase) {
             console.log('');
