@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 2: Minimalist Clean Interface - Portfolio Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --text-primary: #1a1a1a;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --accent: #000000;
+            --accent-light: #f3f4f6;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --border: #e5e7eb;
+            --border-light: #f3f4f6;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Top Navigation */
+        .top-nav {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: -0.02em;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            padding: 0.5rem 0;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9375rem;
+            border-radius: 6px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #333;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+
+        .btn-ghost:hover {
+            background: var(--accent-light);
+            color: var(--text-primary);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 3rem;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 3rem;
+        }
+
+        .page-title {
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.03em;
+        }
+
+        .page-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: flex;
+            gap: 4rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 3rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 500;
+        }
+
+        .stat-value-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .stat-trend {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .stat-trend.positive {
+            color: var(--success);
+        }
+
+        /* Content Layout */
+        .content-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 3rem;
+        }
+
+        /* Initiatives List */
+        .initiatives-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .view-options {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-secondary);
+            padding: 0.25rem;
+            border-radius: 6px;
+        }
+
+        .view-option {
+            padding: 0.375rem 0.75rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.875rem;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .view-option.active {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        /* Initiative Cards */
+        .initiative-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .initiative-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+        }
+
+        .initiative-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .initiative-title-row {
+            flex: 1;
+        }
+
+        .initiative-name {
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .initiative-id {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .status-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+
+        .status-badge.active {
+            background: rgba(5, 150, 105, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.completed {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-muted);
+        }
+
+        .status-badge.planned {
+            background: rgba(217, 119, 6, 0.1);
+            color: var(--warning);
+        }
+
+        .status-badge.at-risk {
+            background: rgba(220, 38, 38, 0.1);
+            color: var(--danger);
+        }
+
+        .initiative-meta {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border-light);
+            border-radius: 2px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+
+        .progress-fill.success {
+            background: var(--success);
+        }
+
+        /* Sidebar */
+        .sidebar-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .sidebar-card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .sidebar-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Timeline */
+        .timeline-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .timeline-entry {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .timeline-date {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            min-width: 60px;
+        }
+
+        .timeline-info {
+            flex: 1;
+        }
+
+        .timeline-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .timeline-detail {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        /* Team */
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+
+        .team-card {
+            text-align: center;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 6px;
+        }
+
+        .team-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            margin: 0 auto 0.5rem;
+        }
+
+        .team-name {
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .team-tasks {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Design Note */
+        .design-note {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--accent);
+            color: white;
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            max-width: 280px;
+            font-size: 0.8125rem;
+            line-height: 1.5;
+        }
+
+        .design-note-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .content-layout {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-bar {
+                flex-wrap: wrap;
+                gap: 2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-nav {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .container {
+                padding: 2rem 1.5rem;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .team-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navigation -->
+    <nav class="top-nav">
+        <div class="logo">Portfolio Tracker</div>
+        <div class="nav-tabs">
+            <a href="#" class="nav-tab active">Overview</a>
+            <a href="#" class="nav-tab">Timeline</a>
+            <a href="#" class="nav-tab">Reports</a>
+            <a href="#" class="nav-tab">Settings</a>
+        </div>
+        <div class="nav-actions">
+            <button class="btn btn-ghost">Export</button>
+            <button class="btn btn-primary">New Initiative</button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">Platform Development</h1>
+            <p class="page-subtitle">Track and manage your integration initiatives</p>
+        </div>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">Total</span>
+                <div class="stat-value-row">
+                    <span class="stat-value">24</span>
+                    <span class="stat-trend positive">↑ 12%</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Completed</span>
+                <div class="stat-value-row">
+                    <span class="stat-value">18</span>
+                    <span class="stat-trend">75%</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Active</span>
+                <div class="stat-value-row">
+                    <span class="stat-value">4</span>
+                    <span class="stat-trend">On track</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Planned</span>
+                <div class="stat-value-row">
+                    <span class="stat-value">2</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">At Risk</span>
+                <div class="stat-value-row">
+                    <span class="stat-value">0</span>
+                    <span class="stat-trend positive">↓ Good</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content Layout -->
+        <div class="content-layout">
+            <!-- Initiatives Section -->
+            <div class="initiatives-section">
+                <div class="section-header">
+                    <h2 class="section-title">Active Initiatives</h2>
+                    <div class="view-options">
+                        <button class="view-option active">List</button>
+                        <button class="view-option">Grid</button>
+                        <button class="view-option">Timeline</button>
+                    </div>
+                </div>
+
+                <!-- Initiative Cards -->
+                <div class="initiative-card">
+                    <div class="initiative-header">
+                        <div class="initiative-title-row">
+                            <div class="initiative-name">API Gateway Integration</div>
+                            <div class="initiative-id">PLAT-001</div>
+                        </div>
+                        <div class="status-badge active">Active</div>
+                    </div>
+                    <div class="initiative-meta">
+                        <div class="meta-item">
+                            <span>Owner:</span>
+                            <strong>Sarah Chen</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Due:</span>
+                            <strong>Mar 15, 2026</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Priority:</span>
+                            <strong>High</strong>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%;"></div>
+                    </div>
+                </div>
+
+                <div class="initiative-card">
+                    <div class="initiative-header">
+                        <div class="initiative-title-row">
+                            <div class="initiative-name">Cloud Migration Phase 2</div>
+                            <div class="initiative-id">PLAT-002</div>
+                        </div>
+                        <div class="status-badge active">Active</div>
+                    </div>
+                    <div class="initiative-meta">
+                        <div class="meta-item">
+                            <span>Owner:</span>
+                            <strong>Michael Ross</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Due:</span>
+                            <strong>Apr 01, 2026</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Priority:</span>
+                            <strong>Medium</strong>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 40%;"></div>
+                    </div>
+                </div>
+
+                <div class="initiative-card">
+                    <div class="initiative-header">
+                        <div class="initiative-title-row">
+                            <div class="initiative-name">User Authentication System</div>
+                            <div class="initiative-id">PLAT-003</div>
+                        </div>
+                        <div class="status-badge completed">Completed</div>
+                    </div>
+                    <div class="initiative-meta">
+                        <div class="meta-item">
+                            <span>Owner:</span>
+                            <strong>Lisa Park</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Completed:</span>
+                            <strong>Feb 28, 2026</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Priority:</span>
+                            <strong>High</strong>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill success" style="width: 100%;"></div>
+                    </div>
+                </div>
+
+                <div class="initiative-card">
+                    <div class="initiative-header">
+                        <div class="initiative-title-row">
+                            <div class="initiative-name">Performance Optimization</div>
+                            <div class="initiative-id">PLAT-004</div>
+                        </div>
+                        <div class="status-badge active">Active</div>
+                    </div>
+                    <div class="initiative-meta">
+                        <div class="meta-item">
+                            <span>Owner:</span>
+                            <strong>James Wilson</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Due:</span>
+                            <strong>Mar 30, 2026</strong>
+                        </div>
+                        <div class="meta-item">
+                            <span>Priority:</span>
+                            <strong>Medium</strong>
+                        </div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 30%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar-section">
+                <!-- Upcoming Timeline -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Upcoming</h3>
+                    <div class="timeline-list">
+                        <div class="timeline-entry">
+                            <div class="timeline-date">Mar 15</div>
+                            <div class="timeline-info">
+                                <div class="timeline-name">API Gateway Launch</div>
+                                <div class="timeline-detail">Production deployment</div>
+                            </div>
+                        </div>
+                        <div class="timeline-entry">
+                            <div class="timeline-date">Mar 30</div>
+                            <div class="timeline-info">
+                                <div class="timeline-name">Performance Review</div>
+                                <div class="timeline-detail">Q1 metrics</div>
+                            </div>
+                        </div>
+                        <div class="timeline-entry">
+                            <div class="timeline-date">Apr 01</div>
+                            <div class="timeline-info">
+                                <div class="timeline-name">Cloud Migration</div>
+                                <div class="timeline-detail">Phase 2 completion</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team -->
+                <div class="sidebar-card">
+                    <h3 class="sidebar-title">Team</h3>
+                    <div class="team-grid">
+                        <div class="team-card">
+                            <div class="team-avatar">SC</div>
+                            <div class="team-name">Sarah Chen</div>
+                            <div class="team-tasks">3 tasks</div>
+                        </div>
+                        <div class="team-card">
+                            <div class="team-avatar">MR</div>
+                            <div class="team-name">Michael Ross</div>
+                            <div class="team-tasks">2 tasks</div>
+                        </div>
+                        <div class="team-card">
+                            <div class="team-avatar">LP</div>
+                            <div class="team-name">Lisa Park</div>
+                            <div class="team-tasks">4 tasks</div>
+                        </div>
+                        <div class="team-card">
+                            <div class="team-avatar">JW</div>
+                            <div class="team-name">James Wilson</div>
+                            <div class="team-tasks">2 tasks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design Note -->
+    <div class="design-note">
+        <div class="design-note-title">Design 2: Minimalist Clean</div>
+        <div>
+            Focuses on typography, whitespace, and simplicity. Uses a monochrome palette 
+            with subtle borders. Ideal for users who prefer a distraction-free, 
+            content-focused interface.
+        </div>
+    </div>
+</body>
+</html>
