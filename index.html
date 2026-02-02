@@ -1588,20 +1588,63 @@ Default phases added:
     `);
 }
 		
+		/**
+		 * Export Data for Email Scheduler
+		 * 
+		 * This function exports initiative data to an external email scheduler service.
+		 * The service should be running on http://localhost:3001/api/export-data
+		 * 
+		 * For weekly automated emails:
+		 * 1. Set up a cron job or scheduler to call this function weekly
+		 * 2. Or use the email scheduler service with its own scheduling mechanism
+		 * 3. The service should format and send status summary emails
+		 * 
+		 * Email Content should include:
+		 * - Summary of initiatives by status (Active, Risk, Planned, Completed)
+		 * - List of key initiatives
+		 * - Initiatives approaching target dates
+		 * - Overdue initiatives
+		 */
 		async function exportDataForEmail() {
   try {
     const initiatives = await getAllInitiatives();
     
+    // Prepare summary statistics for email
+    const summary = {
+      total: initiatives.length,
+      byStatus: {
+        active: initiatives.filter(i => i.status === 'active').length,
+        risk: initiatives.filter(i => i.status === 'risk').length,
+        planned: initiatives.filter(i => i.status === 'planned').length,
+        completed: initiatives.filter(i => i.status === 'completed').length
+      },
+      keyInitiatives: initiatives.filter(i => i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')).length,
+      approachingDeadline: initiatives.filter(i => {
+        const daysUntilTarget = Math.ceil((new Date(i.targetDate) - new Date()) / (1000 * 60 * 60 * 24));
+        return daysUntilTarget > 0 && daysUntilTarget <= 14;
+      }).length,
+      overdue: initiatives.filter(i => new Date(i.targetDate) < new Date() && i.status !== 'completed').length
+    };
+    
     const response = await fetch('http://localhost:3001/api/export-data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ initiatives, exportDate: new Date().toISOString() })
+      body: JSON.stringify({ 
+        initiatives, 
+        summary,
+        exportDate: new Date().toISOString() 
+      })
     });
     
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
     const result = await response.json();
-    alert(result.success ? '✅ Data exported!' : '❌ Export failed');
+    alert(result.success ? '✅ Data exported for email!' : '❌ Export failed: ' + (result.error || 'Unknown error'));
   } catch (error) {
-    alert('❌ Is email scheduler running?');
+    console.error('Email export error:', error);
+    alert('❌ Email scheduler service not available!\n\nPlease ensure the email service is running on http://localhost:3001\n\nFor setup instructions, see the documentation.');
   }
 }
 // ========== IndexedDB Database Layer ==========
