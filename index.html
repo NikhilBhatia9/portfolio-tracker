@@ -311,26 +311,29 @@
 
         .timeline-axis {
             position: relative;
-            height: 24px;
-            border-bottom: 1px solid var(--border-color);
-            margin-bottom: 0.5rem;
+            height: 28px;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 0.75rem;
             min-width: 800px;
             margin-left: 150px;
             width: calc(100% - 150px);
+            background: linear-gradient(to bottom, transparent 80%, rgba(0, 0, 0, 0.02) 100%);
         }
 
         .timeline-row {
             position: relative;
             display: flex;
             align-items: center;
-            margin-bottom: 0.75rem;
+            margin-bottom: 1rem;
             min-width: 800px;
+            padding: 0.25rem 0;
         }
 
         .timeline-label {
             width: 150px;
             flex-shrink: 0;
             font-size: 0.9rem;
+            font-weight: 500;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -339,38 +342,48 @@
             left: 0;
             background: var(--bg-secondary);
             z-index: 10;
+            color: var(--text-primary);
         }
 
         .timeline-track {
             flex-grow: 1;
             min-height: 30px;
-            background: var(--bg-primary);
-            border-radius: 4px;
+            background: linear-gradient(to bottom, var(--bg-primary), rgba(0, 0, 0, 0.02));
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             position: relative;
             overflow: hidden;
-            transition: height 0.2s ease;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .timeline-bar {
             position: absolute;
             height: 20px;
-            border-radius: 4px;
-            opacity: 0.8;
+            border-radius: 5px;
+            opacity: 0.9;
             z-index: 5;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
         }
 
         .timeline-bar:hover {
             opacity: 1;
             z-index: 10;
             cursor: grab;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+            transform: translateY(-1px);
+            border-color: rgba(0, 0, 0, 0.25);
         }
 
         .timeline-bar.dragging {
-            opacity: 0.9;
+            opacity: 0.95;
             z-index: 20;
             cursor: grabbing;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            transform: scale(1.02);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+            transform: scale(1.03) translateY(-2px);
+            border-color: rgba(0, 0, 0, 0.3);
         }
 
         /* Modal */
@@ -2518,12 +2531,29 @@ const loadState = async () => {
                     ...(i.phases || []).flatMap(p => [new Date(p.startDate).getTime(), new Date(p.endDate).getTime()])
                 ]);
 
-                let minDate = new Date(2026, 0, 1).getTime();
+                // Compute minDate from actual data instead of hardcoding to 2026
+                let computedMinDate = Math.min(...dates);
+                // Fallback to current date if computed minDate is invalid (NaN or infinite)
+                if (!isFinite(computedMinDate)) {
+                    computedMinDate = new Date().getTime();
+                }
+                // Normalize to first day of month at 00:00
+                let minD = new Date(computedMinDate);
+                minD.setDate(1);
+                minD.setHours(0, 0, 0, 0);
+                let minDate = minD.getTime();
 
                 let maxD = new Date(Math.max(...dates, new Date(new Date().getFullYear(), 11, 31).getTime()));
                 maxD.setMonth(maxD.getMonth() + 1);
                 maxD.setDate(0); // End of month
-                const maxDate = maxD.getTime();
+                let maxDate = maxD.getTime();
+                
+                // Guard: if minDate >= maxDate, shift minDate back by 3 months
+                if (minDate >= maxDate) {
+                    minD.setMonth(minD.getMonth() - 3);
+                    minDate = minD.getTime();
+                }
+                
                 const totalMs = maxDate - minDate;
 
                 // 2. Render Axis
