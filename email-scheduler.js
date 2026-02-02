@@ -9,12 +9,21 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Configure email transporter (using ethereal for testing, configure with real SMTP for production)
-let transporter = null;
+// Configure email transporter (using console logging for development)
+// To enable real email sending, uncomment and configure the transporter below:
+// const transporter = nodemailer.createTransport({
+//   host: process.env.SMTP_HOST,
+//   port: process.env.SMTP_PORT,
+//   secure: true,
+//   auth: {
+//     user: process.env.SMTP_USER,
+//     pass: process.env.SMTP_PASS
+//   }
+// });
 
-async function setupTransporter() {
+function setupTransporter() {
   // For testing purposes, we'll use console logging
-  // In production, configure with real SMTP settings
+  // In production, configure with real SMTP settings above
   console.log('📧 Email transporter setup (using console logging for development)');
   console.log('⚠️  To use real email, configure SMTP settings in environment variables');
 }
@@ -114,8 +123,8 @@ app.get('/health', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, async () => {
-  await setupTransporter();
+app.listen(PORT, () => {
+  setupTransporter();
   console.log('\n🚀 Email Scheduler Service Started');
   console.log('═══════════════════════════════════════');
   console.log(`📡 Server running on http://localhost:${PORT}`);
