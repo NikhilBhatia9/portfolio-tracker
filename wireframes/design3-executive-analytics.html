@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Design 3: Executive Analytics Dashboard - Portfolio Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e27;
+            --bg-secondary: #151934;
+            --bg-card: #1a1f3a;
+            --bg-card-hover: #1f2442;
+            --text-primary: #ffffff;
+            --text-secondary: #a8b3cf;
+            --text-muted: #6b7694;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #7b61ff;
+            --accent-tertiary: #ff6b9d;
+            --success: #00e396;
+            --warning: #feb019;
+            --danger: #ff4560;
+            --info: #0090ff;
+            --border: #2a2f4a;
+            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --gradient-4: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --gradient-5: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .dashboard-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--gradient-3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.125rem;
+        }
+
+        .logo-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9375rem;
+            font-weight: 500;
+            transition: color 0.2s;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-primary);
+        }
+
+        .nav-link.active {
+            color: var(--text-primary);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1.5rem;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-primary);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+            transform: translateY(-1px);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .kpi-card:hover {
+            border-color: var(--accent-primary);
+            background: var(--bg-card-hover);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--kpi-gradient);
+        }
+
+        .kpi-card.total { --kpi-gradient: var(--gradient-3); }
+        .kpi-card.completed { --kpi-gradient: var(--gradient-4); }
+        .kpi-card.active { --kpi-gradient: var(--gradient-1); }
+        .kpi-card.planned { --kpi-gradient: var(--gradient-5); }
+        .kpi-card.at-risk { --kpi-gradient: var(--gradient-2); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-label {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+
+        .kpi-value-section {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .kpi-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .kpi-change {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.875rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .kpi-change.positive {
+            background: rgba(0, 227, 150, 0.15);
+            color: var(--success);
+        }
+
+        .kpi-change.negative {
+            background: rgba(255, 69, 96, 0.15);
+            color: var(--danger);
+        }
+
+        .kpi-subtext {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .kpi-chart {
+            margin-top: 1rem;
+            height: 40px;
+            background: rgba(0, 212, 255, 0.05);
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kpi-chart-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 100%;
+            background: var(--kpi-gradient);
+            opacity: 0.3;
+            transition: width 0.3s;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Card Styles */
+        .dashboard-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            background: transparent;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            background: var(--bg-primary);
+            color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        /* Initiatives Table */
+        .initiatives-table {
+            width: 100%;
+        }
+
+        .table-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 100px;
+            gap: 1rem;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .table-row:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .table-row.header {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            cursor: default;
+        }
+
+        .table-row.header:hover {
+            background: var(--bg-primary);
+        }
+
+        .initiative-name-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .initiative-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: var(--gradient-3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+
+        .initiative-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .initiative-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.125rem;
+        }
+
+        .initiative-subtitle {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+        }
+
+        .owner-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .owner-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .progress-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .progress-bar-inline {
+            flex: 1;
+            height: 6px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill-inline {
+            height: 100%;
+            background: var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+        }
+
+        .status-pill {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .status-pill.active {
+            background: rgba(123, 97, 255, 0.15);
+            color: var(--accent-secondary);
+        }
+
+        .status-pill.completed {
+            background: rgba(0, 227, 150, 0.15);
+            color: var(--success);
+        }
+
+        .status-pill.planned {
+            background: rgba(254, 176, 25, 0.15);
+            color: var(--warning);
+        }
+
+        .status-pill.at-risk {
+            background: rgba(255, 69, 96, 0.15);
+            color: var(--danger);
+        }
+
+        /* Activity Feed */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .activity-item:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .activity-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(0, 212, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-text {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .activity-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Risk Indicators */
+        .risk-indicators {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .risk-item {
+            padding: 1rem;
+            background: rgba(255, 69, 96, 0.05);
+            border: 1px solid rgba(255, 69, 96, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .risk-severity {
+            width: 8px;
+            height: 40px;
+            border-radius: 4px;
+            background: var(--danger);
+        }
+
+        .risk-severity.medium {
+            background: var(--warning);
+        }
+
+        .risk-content {
+            flex: 1;
+        }
+
+        .risk-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .risk-description {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+
+        /* Bottom Grid */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* Chart Placeholder */
+        .chart-placeholder {
+            background: var(--bg-primary);
+            border-radius: 8px;
+            height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            gap: 0.5rem;
+            height: 100%;
+            padding: 1rem;
+            width: 100%;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: var(--gradient-3);
+            border-radius: 4px 4px 0 0;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+
+        .chart-bar:hover {
+            opacity: 1;
+        }
+
+        /* Design Note */
+        .design-note {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--accent-primary);
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            max-width: 300px;
+            box-shadow: 0 10px 40px rgba(0, 212, 255, 0.2);
+        }
+
+        .design-note-title {
+            font-weight: 700;
+            color: var(--accent-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .design-note-text {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-row {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="dashboard-header">
+        <div class="header-left">
+            <div class="logo-section">
+                <div class="logo-icon">P</div>
+                <div class="logo-text">Portfolio Tracker</div>
+            </div>
+            <nav class="header-nav">
+                <a href="#" class="nav-link active">Dashboard</a>
+                <a href="#" class="nav-link">Analytics</a>
+                <a href="#" class="nav-link">Reports</a>
+                <a href="#" class="nav-link">Team</a>
+            </nav>
+        </div>
+        <div class="header-right">
+            <div class="date-range">
+                📅 Last 30 days
+            </div>
+            <button class="btn btn-primary">+ New Initiative</button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- KPI Grid -->
+        <div class="kpi-grid">
+            <div class="kpi-card total">
+                <div class="kpi-header">
+                    <div class="kpi-label">Total Initiatives</div>
+                    <div class="kpi-icon">📊</div>
+                </div>
+                <div class="kpi-value-section">
+                    <div class="kpi-value">24</div>
+                    <div class="kpi-change positive">↑ 12.5%</div>
+                </div>
+                <div class="kpi-subtext">+3 from last month</div>
+                <div class="kpi-chart">
+                    <div class="kpi-chart-bar" style="width: 75%;"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card completed">
+                <div class="kpi-header">
+                    <div class="kpi-label">Completed</div>
+                    <div class="kpi-icon">✓</div>
+                </div>
+                <div class="kpi-value-section">
+                    <div class="kpi-value">18</div>
+                    <div class="kpi-change positive">↑ 50%</div>
+                </div>
+                <div class="kpi-subtext">75% completion rate</div>
+                <div class="kpi-chart">
+                    <div class="kpi-chart-bar" style="width: 90%;"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card active">
+                <div class="kpi-header">
+                    <div class="kpi-label">Active</div>
+                    <div class="kpi-icon">⚡</div>
+                </div>
+                <div class="kpi-value-section">
+                    <div class="kpi-value">4</div>
+                    <div class="kpi-change positive">On track</div>
+                </div>
+                <div class="kpi-subtext">All progressing well</div>
+                <div class="kpi-chart">
+                    <div class="kpi-chart-bar" style="width: 65%;"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card planned">
+                <div class="kpi-header">
+                    <div class="kpi-label">Planned</div>
+                    <div class="kpi-icon">📅</div>
+                </div>
+                <div class="kpi-value-section">
+                    <div class="kpi-value">2</div>
+                    <div class="kpi-change positive">Ready</div>
+                </div>
+                <div class="kpi-subtext">Starting this quarter</div>
+                <div class="kpi-chart">
+                    <div class="kpi-chart-bar" style="width: 40%;"></div>
+                </div>
+            </div>
+
+            <div class="kpi-card at-risk">
+                <div class="kpi-header">
+                    <div class="kpi-label">At Risk</div>
+                    <div class="kpi-icon">⚠️</div>
+                </div>
+                <div class="kpi-value-section">
+                    <div class="kpi-value">0</div>
+                    <div class="kpi-change positive">↓ -2</div>
+                </div>
+                <div class="kpi-subtext">Great performance!</div>
+                <div class="kpi-chart">
+                    <div class="kpi-chart-bar" style="width: 10%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Initiatives Table -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Active Initiatives</h2>
+                    <div class="card-actions">
+                        <button class="icon-btn">⚙️</button>
+                        <button class="icon-btn">⋯</button>
+                    </div>
+                </div>
+                <div class="initiatives-table">
+                    <div class="table-row header">
+                        <div>Initiative</div>
+                        <div>Owner</div>
+                        <div>Progress</div>
+                        <div>Due Date</div>
+                        <div>Status</div>
+                    </div>
+                    <div class="table-row">
+                        <div class="initiative-name-cell">
+                            <div class="initiative-icon">🔌</div>
+                            <div class="initiative-info">
+                                <div class="initiative-title">API Gateway Integration</div>
+                                <div class="initiative-subtitle">PLAT-001</div>
+                            </div>
+                        </div>
+                        <div class="owner-cell">
+                            <div class="owner-avatar">SC</div>
+                            <span>Sarah Chen</span>
+                        </div>
+                        <div class="progress-cell">
+                            <div class="progress-bar-inline">
+                                <div class="progress-fill-inline" style="width: 65%;"></div>
+                            </div>
+                            <div class="progress-text">65%</div>
+                        </div>
+                        <div>Mar 15</div>
+                        <div><span class="status-pill active">Active</span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="initiative-name-cell">
+                            <div class="initiative-icon">☁️</div>
+                            <div class="initiative-info">
+                                <div class="initiative-title">Cloud Migration Phase 2</div>
+                                <div class="initiative-subtitle">PLAT-002</div>
+                            </div>
+                        </div>
+                        <div class="owner-cell">
+                            <div class="owner-avatar">MR</div>
+                            <span>Michael Ross</span>
+                        </div>
+                        <div class="progress-cell">
+                            <div class="progress-bar-inline">
+                                <div class="progress-fill-inline" style="width: 40%;"></div>
+                            </div>
+                            <div class="progress-text">40%</div>
+                        </div>
+                        <div>Apr 01</div>
+                        <div><span class="status-pill active">Active</span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="initiative-name-cell">
+                            <div class="initiative-icon">🔐</div>
+                            <div class="initiative-info">
+                                <div class="initiative-title">User Authentication System</div>
+                                <div class="initiative-subtitle">PLAT-003</div>
+                            </div>
+                        </div>
+                        <div class="owner-cell">
+                            <div class="owner-avatar">LP</div>
+                            <span>Lisa Park</span>
+                        </div>
+                        <div class="progress-cell">
+                            <div class="progress-bar-inline">
+                                <div class="progress-fill-inline" style="width: 100%;"></div>
+                            </div>
+                            <div class="progress-text">100%</div>
+                        </div>
+                        <div>Feb 28</div>
+                        <div><span class="status-pill completed">Done</span></div>
+                    </div>
+                    <div class="table-row">
+                        <div class="initiative-name-cell">
+                            <div class="initiative-icon">⚡</div>
+                            <div class="initiative-info">
+                                <div class="initiative-title">Performance Optimization</div>
+                                <div class="initiative-subtitle">PLAT-004</div>
+                            </div>
+                        </div>
+                        <div class="owner-cell">
+                            <div class="owner-avatar">JW</div>
+                            <span>James Wilson</span>
+                        </div>
+                        <div class="progress-cell">
+                            <div class="progress-bar-inline">
+                                <div class="progress-fill-inline" style="width: 30%;"></div>
+                            </div>
+                            <div class="progress-text">30%</div>
+                        </div>
+                        <div>Mar 30</div>
+                        <div><span class="status-pill active">Active</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Recent Activity</h2>
+                </div>
+                <div class="activity-feed">
+                    <div class="activity-item">
+                        <div class="activity-icon">✓</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Authentication system deployed to production</div>
+                            <div class="activity-meta">Lisa Park • 2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">📝</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Updated API Gateway documentation</div>
+                            <div class="activity-meta">Sarah Chen • 4 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">🚀</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Cloud migration checkpoint reached</div>
+                            <div class="activity-meta">Michael Ross • 1 day ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">💬</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Team meeting notes added</div>
+                            <div class="activity-meta">Team • 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="activity-item">
+                        <div class="activity-icon">⚡</div>
+                        <div class="activity-content">
+                            <div class="activity-text">Performance optimization started</div>
+                            <div class="activity-meta">James Wilson • 3 days ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Grid -->
+        <div class="bottom-grid">
+            <!-- Timeline Chart -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Completion Trend</h2>
+                </div>
+                <div class="chart-placeholder">
+                    <div class="chart-bars">
+                        <div class="chart-bar" style="height: 40%;"></div>
+                        <div class="chart-bar" style="height: 55%;"></div>
+                        <div class="chart-bar" style="height: 65%;"></div>
+                        <div class="chart-bar" style="height: 70%;"></div>
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 75%;"></div>
+                        <div class="chart-bar" style="height: 90%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Velocity Chart -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Team Velocity</h2>
+                </div>
+                <div class="chart-placeholder">
+                    <div class="chart-bars">
+                        <div class="chart-bar" style="height: 60%;"></div>
+                        <div class="chart-bar" style="height: 75%;"></div>
+                        <div class="chart-bar" style="height: 55%;"></div>
+                        <div class="chart-bar" style="height: 80%;"></div>
+                        <div class="chart-bar" style="height: 70%;"></div>
+                        <div class="chart-bar" style="height: 85%;"></div>
+                        <div class="chart-bar" style="height: 65%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Risk Items -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h2 class="card-title">Risk Alerts</h2>
+                </div>
+                <div class="risk-indicators">
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+                        <div>No active risks!</div>
+                        <div style="font-size: 0.8125rem; margin-top: 0.25rem;">All initiatives are on track</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Design Note -->
+    <div class="design-note">
+        <div class="design-note-title">Design 3: Executive Analytics</div>
+        <div class="design-note-text">
+            Dark theme with rich data visualizations and analytics focus. Features KPI cards with 
+            micro-charts, activity feeds, and progress tracking. Perfect for executives and 
+            stakeholders who need comprehensive insights at a glance.
+        </div>
+    </div>
+</body>
+</html>
