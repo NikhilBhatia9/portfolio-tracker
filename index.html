@@ -3033,6 +3033,7 @@ const loadState = async () => {
                 let filtered = initiatives;
                 if (filter !== 'all') {
                     if (filter === 'active') {
+                        // Active filter includes both active and risk status
                         filtered = initiatives.filter(i => i.status === 'active' || i.status === 'risk');
                     } else {
                         filtered = initiatives.filter(i => i.status === filter);
@@ -3049,7 +3050,7 @@ const loadState = async () => {
                 
                 container.innerHTML = filtered.slice(0, 10).map(i => {
                     const targetDate = new Date(i.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const isKey = i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No');
+                    const isKey = i.keyInitiative === 'Yes';
                     
                     let badgeClass = 'badge-active';
                     if (i.status === 'planned') badgeClass = 'badge-planned';
@@ -3199,8 +3200,11 @@ const loadState = async () => {
             function filterInitiatives(filter) {
                 // Update active tab
                 document.querySelectorAll('.filter-tab').forEach(tab => {
-                    tab.classList.toggle('active', tab.textContent.toLowerCase().includes(filter) || 
-                        (filter === 'all' && tab.textContent === 'All'));
+                    const tabText = tab.textContent.trim().toLowerCase();
+                    const isActive = tabText === filter || 
+                        (filter === 'all' && tab.textContent.trim() === 'All') ||
+                        (filter === 'risk' && tabText === 'at risk');
+                    tab.classList.toggle('active', isActive);
                 });
                 
                 renderInitiativesList(filter);
@@ -3253,7 +3257,9 @@ const loadState = async () => {
                     if (!initiative.notes || initiative.notes.length === 0) {
                         notesList.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.875rem">No notes yet</div>';
                     } else {
-                        notesList.innerHTML = initiative.notes.map(note => {
+                        // Sort notes by date descending (newest first)
+                        const sortedNotes = initiative.notes.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+                        notesList.innerHTML = sortedNotes.map(note => {
                             const date = new Date(note.date).toLocaleDateString('en-US', { 
                                 month: 'short', 
                                 day: 'numeric',
@@ -3267,7 +3273,7 @@ const loadState = async () => {
                                     <div class="note-meta">${note.author} • ${date}</div>
                                 </div>
                             `;
-                        }).reverse().join(''); // Show newest first
+                        }).join('');
                     }
                 } else {
                     notesSection.style.display = 'none';
