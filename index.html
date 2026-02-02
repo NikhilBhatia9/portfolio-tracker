@@ -871,18 +871,18 @@
                     <div class="form-grid"
                         style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">Name</label>
-                            <input type="text" id="filter-tl-name" placeholder="Filter Name..."
-                                style="font-size: 0.8rem; padding: 4px;"
-                                oninput="updateTimelineFilters('name', this.value)">
-                        </div>
-                        <div class="form-group">
                             <label style="font-size: 0.75rem;">&nbsp;</label>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <input type="checkbox" id="filter-tl-key" 
                                     onchange="updateTimelineFilters('key', this.checked)" />
                                 <span style="font-size: 0.8rem;">Show only key initiatives</span>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-size: 0.75rem;">Name</label>
+                            <input type="text" id="filter-tl-name" placeholder="Filter Name..."
+                                style="font-size: 0.8rem; padding: 4px;"
+                                oninput="updateTimelineFilters('name', this.value)">
                         </div>
                         <div class="form-group">
                             <label style="font-size: 0.75rem;">Owner</label>
