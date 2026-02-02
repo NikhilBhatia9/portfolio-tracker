@@ -1750,7 +1750,7 @@ const loadState = async () => {
             function seedData() {
                 appState.initiatives = [
                     {
-                        id: '1', name: 'Q1 Core Platform Migration', owner: 'Alice DB', status: 'active',
+                        id: '1', name: 'Q1 Core Platform Migration', owner: 'Alice DB', keyInitiative: 'Yes', status: 'active',
                         startDate: new Date(Date.now() - 864e5 * 10).toISOString(),
                         targetDate: new Date(Date.now() + 864e5 * 45).toISOString(),
                         categories: ['Platform Development'],
@@ -1760,13 +1760,13 @@ const loadState = async () => {
                             { id: 'p3', name: 'QA', color: '#ec4899', startDate: new Date(Date.now() + 864e5 * 31).toISOString(), endDate: new Date(Date.now() + 864e5 * 45).toISOString(), status: 'pending' }
                         ]
                     },
-                    { id: '2', name: 'Mobile App Refactor', owner: 'Bob Mobile', status: 'risk', categories: ['Platform Development', 'Mobile'], startDate: new Date(Date.now() - 864e5 * 20).toISOString(), targetDate: new Date(Date.now() + 864e5 * 5).toISOString(), phases: [] },
-                    { id: '3', name: 'Design System 2.0', owner: 'Carol UI', status: 'planned', categories: ['Enterprise Integration'], startDate: new Date(Date.now() + 864e5 * 5).toISOString(), targetDate: new Date(Date.now() + 864e5 * 60).toISOString(), phases: [] },
-                    { id: '4', name: 'Legacy API Shutdown', owner: 'Dave Ops', status: 'completed', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 40).toISOString(), targetDate: new Date(Date.now() - 864e5 * 10).toISOString(), phases: [] },
-                    { id: '5', name: 'Customer Portal V3', owner: 'Sarah N.', status: 'active', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 15).toISOString(), targetDate: new Date(Date.now() + 864e5 * 30).toISOString(), phases: [] },
-                    { id: '6', name: 'Analytics Dashboard', owner: 'Mike Data', status: 'risk', categories: ['Platform Development'], startDate: new Date(Date.now() - 864e5 * 25).toISOString(), targetDate: new Date(Date.now() - 864e5 * 2).toISOString(), phases: [] },
-                    { id: '7', name: 'Onboarding Flow Optimization', owner: 'Jessica P.', status: 'completed', startDate: new Date(Date.now() - 864e5 * 50).toISOString(), targetDate: new Date(Date.now() - 864e5 * 15).toISOString(), phases: [] },
-                    { id: '8', name: 'AI Recommendation Engine', owner: 'Tom AI', status: 'planned', categories: ['Platform Development'], startDate: new Date(Date.now() + 864e5 * 10).toISOString(), targetDate: new Date(Date.now() + 864e5 * 90).toISOString(), phases: [] }
+                    { id: '2', name: 'Mobile App Refactor', owner: 'Bob Mobile', keyInitiative: 'No', status: 'risk', categories: ['Platform Development', 'Mobile'], startDate: new Date(Date.now() - 864e5 * 20).toISOString(), targetDate: new Date(Date.now() + 864e5 * 5).toISOString(), phases: [] },
+                    { id: '3', name: 'Design System 2.0', owner: 'Carol UI', keyInitiative: 'Yes', status: 'planned', categories: ['Enterprise Integration'], startDate: new Date(Date.now() + 864e5 * 5).toISOString(), targetDate: new Date(Date.now() + 864e5 * 60).toISOString(), phases: [] },
+                    { id: '4', name: 'Legacy API Shutdown', owner: 'Dave Ops', keyInitiative: 'No', status: 'completed', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 40).toISOString(), targetDate: new Date(Date.now() - 864e5 * 10).toISOString(), phases: [] },
+                    { id: '5', name: 'Customer Portal V3', owner: 'Sarah N.', keyInitiative: 'Yes', status: 'active', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 15).toISOString(), targetDate: new Date(Date.now() + 864e5 * 30).toISOString(), phases: [] },
+                    { id: '6', name: 'Analytics Dashboard', owner: 'Mike Data', keyInitiative: 'No', status: 'risk', categories: ['Platform Development'], startDate: new Date(Date.now() - 864e5 * 25).toISOString(), targetDate: new Date(Date.now() - 864e5 * 2).toISOString(), phases: [] },
+                    { id: '7', name: 'Onboarding Flow Optimization', owner: 'Jessica P.', keyInitiative: 'No', status: 'completed', startDate: new Date(Date.now() - 864e5 * 50).toISOString(), targetDate: new Date(Date.now() - 864e5 * 15).toISOString(), phases: [] },
+                    { id: '8', name: 'AI Recommendation Engine', owner: 'Tom AI', keyInitiative: 'No', status: 'planned', categories: ['Platform Development'], startDate: new Date(Date.now() + 864e5 * 10).toISOString(), targetDate: new Date(Date.now() + 864e5 * 90).toISOString(), phases: [] }
                 ];
                 saveState();
             }
