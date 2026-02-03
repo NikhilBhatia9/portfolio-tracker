@@ -1952,8 +1952,11 @@ async function getAllSnapshotsFromSupabase() {
 }
 
 // Supabase: Create snapshot
-async function createSnapshotInSupabase(note) {
-    const initiatives = await getAllInitiatives();
+async function createSnapshotInSupabase(note, initiatives = null) {
+    // If initiatives not provided, fetch all initiatives (for backwards compatibility)
+    if (!initiatives) {
+        initiatives = await getAllInitiatives();
+    }
     
     const { data, error } = await supabaseClient
         .from('snapshots')
@@ -2379,14 +2382,18 @@ async function getAllSnapshotsFromDB() {
   });
 }
 
-async function createSnapshotInDB(note) {
+async function createSnapshotInDB(note, initiatives = null) {
   if (useSupabase) {
-    return await createSnapshotInSupabase(note);
+    return await createSnapshotInSupabase(note, initiatives);
   }
   
   return new Promise(async (resolve, reject) => {
     try {
-      const initiatives = await getAllInitiatives();
+      // If initiatives not provided, fetch all initiatives (for backwards compatibility)
+      if (!initiatives) {
+        initiatives = await getAllInitiatives();
+      }
+      
       const snapshot = {
         note: note || '',
         data: JSON.stringify(initiatives),
@@ -2507,7 +2514,9 @@ function getRandomModernColor() {
                 },
                 // Pagination state for initiatives list
                 initiativesPage: 1,
-                initiativesPerPage: 10
+                initiativesPerPage: 10,
+                // Current active view: 'current' (dashboard), 'timeline', or 'snapshots'
+                activeView: 'current'
             };
             let editingId = null;
             let editingCopy = null;
@@ -3101,12 +3110,45 @@ const loadState = async () => {
                 renderPhases();
             }
 
+            // Get filtered initiatives based on the current active view
+            function getFilteredInitiativesForCurrentView() {
+                const initiatives = appState.initiatives;
+                
+                // If on timeline view, apply timeline filters
+                if (appState.activeView === 'timeline') {
+                    const tl = appState.timelineFilters;
+                    return initiatives.filter(i => {
+                        const matchName = i.name.toLowerCase().includes(tl.name.toLowerCase());
+                        const matchKey = !tl.key ? true : ((i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')));
+                        const matchOwner = i.owner.toLowerCase().includes(tl.owner.toLowerCase());
+                        const matchStatus = tl.status.length === 0 || tl.status.includes(i.status);
+                        const matchDate = !tl.targetDate || new Date(i.targetDate) <= new Date(tl.targetDate);
+                        return matchName && matchKey && matchOwner && matchStatus && matchDate;
+                    });
+                }
+                
+                // If on dashboard view, apply dashboard filters
+                if (appState.activeView === 'current') {
+                    return initiatives
+                        .filter(i => {
+                            if (appState.filterStatus === 'all') return true;
+                            if (appState.filterStatus === 'active') return i.status === 'active' || i.status === 'risk';
+                            if (appState.filterStatus === 'planned') return i.status && i.status.toLowerCase() === 'planned';
+                            return i.status === appState.filterStatus;
+                        })
+                        .filter(i => appState.filterCategory === 'all' || (i.categories && i.categories.includes(appState.filterCategory)));
+                }
+                
+                // For snapshots view or any other view, return all initiatives
+                return initiatives;
+            }
 
             async function takeSnapshot() {
   const note = document.getElementById('snap-note').value;
   
   try {
-    const snapshot = await createSnapshotInDB(note);
+    const filteredInitiatives = getFilteredInitiativesForCurrentView();
+    const snapshot = await createSnapshotInDB(note, filteredInitiatives);
     
     appState.snapshots.unshift({
       id: snapshot.id.toString(),
@@ -3156,6 +3198,8 @@ const loadState = async () => {
             }
 
             function switchView(viewName) {
+                appState.activeView = viewName;
+                
                 document.getElementById('view-current').classList.toggle('hidden', viewName !== 'current');
                 document.getElementById('view-timeline').classList.toggle('hidden', viewName !== 'timeline');
                 document.getElementById('view-snapshots').classList.toggle('hidden', viewName !== 'snapshots');
