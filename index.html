@@ -1975,6 +1975,62 @@ async function createSnapshotInSupabase(note) {
 }
 
 
+// Supabase: Get all activities
+async function getAllActivitiesFromSupabase() {
+    const { data, error } = await supabaseClient
+        .from('activities')
+        .select('*')
+        .order('timestamp', { ascending: false })
+        .limit(10);
+    
+    if (error) throw error;
+    
+    return data.map(item => ({
+        id: item.id,
+        type: item.type,
+        icon: item.icon,
+        text: item.text,
+        meta: item.meta,
+        timestamp: item.timestamp,
+        initiativeId: item.initiative_id,
+        initiativeName: item.initiative_name
+    }));
+}
+
+// Supabase: Save activity
+async function saveActivityToSupabase(activity) {
+    const dbFormat = {
+        type: activity.type,
+        icon: activity.icon,
+        text: activity.text,
+        meta: activity.meta,
+        timestamp: activity.timestamp,
+        initiative_id: activity.initiativeId,
+        initiative_name: activity.initiativeName
+    };
+    
+    const { data, error } = await supabaseClient
+        .from('activities')
+        .insert(dbFormat)
+        .select()
+        .single();
+    
+    if (error) throw error;
+    
+    console.log('💾 Activity saved to Supabase:', activity.type);
+    return {
+        id: data.id,
+        type: data.type,
+        icon: data.icon,
+        text: data.text,
+        meta: data.meta,
+        timestamp: data.timestamp,
+        initiativeId: data.initiative_id,
+        initiativeName: data.initiative_name
+    };
+}
+
+
 // Update storage status indicator in UI
 function updateStorageStatus() {
     const statusDiv = document.getElementById('storage-status');
@@ -2207,7 +2263,7 @@ Default phases added:
 }
 // ========== IndexedDB Database Layer ==========
 const DB_NAME = 'InitiativeTrackerDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented to add activities table
 let db = null;
 
 function initDB() {
@@ -2232,6 +2288,12 @@ function initDB() {
       
       if (!db.objectStoreNames.contains('snapshots')) {
         db.createObjectStore('snapshots', { keyPath: 'id', autoIncrement: true });
+      }
+      
+      if (!db.objectStoreNames.contains('activities')) {
+        const activityStore = db.createObjectStore('activities', { keyPath: 'id', autoIncrement: true });
+        activityStore.createIndex('timestamp', 'timestamp', { unique: false });
+        activityStore.createIndex('type', 'type', { unique: false });
       }
       
       console.log('✅ Database schema created');
@@ -2343,6 +2405,75 @@ async function createSnapshotInDB(note) {
     } catch (error) {
       reject(error);
     }
+  });
+}
+
+// ====================================
+// ACTIVITIES DATABASE FUNCTIONS
+// ====================================
+
+async function getAllActivitiesFromDB() {
+  if (useSupabase) {
+    return await getAllActivitiesFromSupabase();
+  }
+  
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      resolve([]);
+      return;
+    }
+    
+    const transaction = db.transaction(['activities'], 'readonly');
+    const store = transaction.objectStore('activities');
+    const index = store.index('timestamp');
+    const request = index.openCursor(null, 'prev'); // descending order
+    
+    const activities = [];
+    let count = 0;
+    
+    request.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor && count < 10) {
+        activities.push(cursor.value);
+        count++;
+        cursor.continue();
+      } else {
+        resolve(activities);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function saveActivityToDB(activity) {
+  if (useSupabase) {
+    return await saveActivityToSupabase(activity);
+  }
+  
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      console.warn('⚠️ Database not initialized, skipping activity save');
+      resolve(activity);
+      return;
+    }
+    
+    const transaction = db.transaction(['activities'], 'readwrite');
+    const store = transaction.objectStore('activities');
+    
+    if (!activity.timestamp) {
+      activity.timestamp = new Date().toISOString();
+    }
+    
+    const request = store.add(activity);
+    request.onsuccess = () => {
+      activity.id = request.result;
+      console.log('💾 Activity saved to DB:', activity.type);
+      resolve(activity);
+    };
+    request.onerror = () => {
+      console.error('❌ Failed to save activity:', request.error);
+      reject(request.error);
+    };
   });
 }
 
@@ -2485,6 +2616,9 @@ const loadState = async () => {
                 renderNotes(); // Render notes section
 
                 document.getElementById('modal-wrapper').classList.remove('hidden');
+                
+                // Setup date validation listeners
+                setupDateValidationListeners();
             }
 
             function closeModal() {
@@ -2541,6 +2675,9 @@ const loadState = async () => {
   }
   
   try {
+    // Get the old initiative to check what changed
+    const oldInitiative = appState.initiatives.find(i => i.id === editingId);
+    
     const saved = await saveInitiativeToDB(editingCopy);
     
     const idx = appState.initiatives.findIndex(i => i.id === editingId);
@@ -2550,12 +2687,79 @@ const loadState = async () => {
       appState.initiatives.push(saved);
     }
     
+    // Log activity based on what changed
+    try {
+      if (oldInitiative && oldInitiative.status !== 'completed' && editingCopy.status === 'completed') {
+        // Initiative was just marked as completed
+        await saveActivityToDB({
+          type: 'completed',
+          icon: '✓',
+          text: `${editingCopy.name} marked as completed`,
+          meta: editingCopy.owner, // Store only owner, compute relative time at display
+          timestamp: new Date().toISOString(),
+          initiativeId: editingCopy.id,
+          initiativeName: editingCopy.name
+        });
+      } else if (oldInitiative) {
+        // Initiative was updated
+        await saveActivityToDB({
+          type: 'updated',
+          icon: '📝',
+          text: `Updated ${editingCopy.name}`,
+          meta: editingCopy.owner, // Store only owner, compute relative time at display
+          timestamp: new Date().toISOString(),
+          initiativeId: editingCopy.id,
+          initiativeName: editingCopy.name
+        });
+      }
+    } catch (activityError) {
+      console.error('Failed to log activity:', activityError);
+      // Don't fail the save if activity logging fails
+    }
+    
     render();
     closeModal();
   } catch (error) {
     alert('Failed to save: ' + error.message);
   }
 }
+
+            // --- DATE VALIDATION ON BLUR ---
+            function validateMainDatesOnBlur() {
+                const startInput = document.getElementById('edit-start');
+                const targetInput = document.getElementById('edit-target');
+                
+                if (!startInput.value || !targetInput.value) {
+                    return; // Skip validation if dates are not set
+                }
+                
+                const startDate = new Date(startInput.value);
+                const targetDate = new Date(targetInput.value);
+                
+                if (startDate > targetDate) {
+                    // Add error styling
+                    startInput.classList.add('error');
+                    targetInput.classList.add('error');
+                    startInput.title = 'Start Date must be before Target Date';
+                    targetInput.title = 'Target Date must be after Start Date';
+                } else {
+                    // Remove error styling
+                    startInput.classList.remove('error');
+                    targetInput.classList.remove('error');
+                    startInput.title = '';
+                    targetInput.title = '';
+                }
+            }
+            
+            function setupDateValidationListeners() {
+                const startInput = document.getElementById('edit-start');
+                const targetInput = document.getElementById('edit-target');
+                
+                if (startInput && targetInput) {
+                    startInput.addEventListener('blur', validateMainDatesOnBlur);
+                    targetInput.addEventListener('blur', validateMainDatesOnBlur);
+                }
+            }
 
             // --- MULTI-SELECT HELPERS ---
             let selectedCategories = [];
@@ -2816,6 +3020,33 @@ const loadState = async () => {
                     startInput.onchange = (e) => updatePhase(idx, 'startDate', new Date(e.target.value).toISOString());
                     const endInput = tr.querySelector('.date-safe-end');
                     endInput.onchange = (e) => updatePhase(idx, 'endDate', new Date(e.target.value).toISOString());
+                    
+                    // Add blur validation for phase dates
+                    const validatePhaseDates = () => {
+                        if (!startInput.value || !endInput.value) {
+                            return; // Skip validation if dates are not set
+                        }
+                        
+                        const phaseStartDate = new Date(startInput.value);
+                        const phaseEndDate = new Date(endInput.value);
+                        
+                        if (phaseStartDate > phaseEndDate) {
+                            // Add error styling
+                            startInput.classList.add('error');
+                            endInput.classList.add('error');
+                            startInput.title = 'Phase Start Date must be before End Date';
+                            endInput.title = 'Phase End Date must be after Start Date';
+                        } else {
+                            // Remove error styling
+                            startInput.classList.remove('error');
+                            endInput.classList.remove('error');
+                            startInput.title = 'Phase Start Date';
+                            endInput.title = 'Phase End Date';
+                        }
+                    };
+                    
+                    startInput.addEventListener('blur', validatePhaseDates);
+                    endInput.addEventListener('blur', validatePhaseDates);
 
                     tbody.appendChild(tr);
                 });
@@ -3451,75 +3682,52 @@ const loadState = async () => {
             }
             
             // Render Recent Activity
-            function renderRecentActivity() {
+            async function renderRecentActivity() {
                 const container = document.getElementById('recent-activity');
                 
-                // Get recent changes from initiatives
-                const activities = [];
-                const now = Date.now();
-                
-                appState.initiatives.forEach(i => {
-                    const createdDate = i.createdDate ? new Date(i.createdDate) : null;
-                    const updatedDate = i.updatedDate ? new Date(i.updatedDate) : null;
+                try {
+                    // Fetch activities from database
+                    const activities = await getAllActivitiesFromDB();
                     
-                    if (i.status === 'completed' && updatedDate && (now - updatedDate) < 7 * 24 * 60 * 60 * 1000) {
-                        activities.push({
-                            icon: '✓',
-                            text: `${i.name} marked as completed`,
-                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
-                            date: updatedDate
-                        });
-                    } else if (updatedDate && (now - updatedDate) < 3 * 24 * 60 * 60 * 1000) {
-                        activities.push({
-                            icon: '📝',
-                            text: `Updated ${i.name}`,
-                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
-                            date: updatedDate
-                        });
+                    if (activities.length === 0) {
+                        container.innerHTML = `
+                            <div class="activity-item">
+                                <div class="activity-icon">📊</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">Portfolio tracker initialized</div>
+                                    <div class="activity-meta">System • Today</div>
+                                </div>
+                            </div>
+                        `;
+                        return;
                     }
                     
-                    // Check for notes added recently
-                    if (i.notes && i.notes.length > 0) {
-                        const recentNotes = i.notes.filter(n => {
-                            const noteDate = new Date(n.date);
-                            return (now - noteDate) < 7 * 24 * 60 * 60 * 1000;
-                        });
-                        recentNotes.forEach(n => {
-                            activities.push({
-                                icon: '💬',
-                                text: `Added note to ${i.name}`,
-                                meta: `${n.author} • ${getRelativeTime(new Date(n.date))}`,
-                                date: new Date(n.date)
-                            });
-                        });
-                    }
-                });
-                
-                // Sort by date (most recent first)
-                activities.sort((a, b) => b.date - a.date);
-                
-                if (activities.length === 0) {
+                    // Display up to 10 activities (database query already limits to 10)
+                    container.innerHTML = activities.map(a => {
+                        const activityDate = new Date(a.timestamp);
+                        const relativeTime = getRelativeTime(activityDate);
+                        return `
+                            <div class="activity-item">
+                                <div class="activity-icon">${a.icon}</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">${a.text}</div>
+                                    <div class="activity-meta">${a.meta} • ${relativeTime}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } catch (error) {
+                    console.error('Failed to load activities:', error);
                     container.innerHTML = `
                         <div class="activity-item">
-                            <div class="activity-icon">📊</div>
+                            <div class="activity-icon">⚠️</div>
                             <div class="activity-content">
-                                <div class="activity-text">Portfolio tracker initialized</div>
-                                <div class="activity-meta">System • Today</div>
+                                <div class="activity-text">Failed to load activities</div>
+                                <div class="activity-meta">System • Error</div>
                             </div>
                         </div>
                     `;
-                    return;
                 }
-                
-                container.innerHTML = activities.slice(0, 6).map(a => `
-                    <div class="activity-item">
-                        <div class="activity-icon">${a.icon}</div>
-                        <div class="activity-content">
-                            <div class="activity-text">${a.text}</div>
-                            <div class="activity-meta">${a.meta}</div>
-                        </div>
-                    </div>
-                `).join('');
             }
             
             // Helper function for relative time
@@ -3577,6 +3785,17 @@ const loadState = async () => {
                 
                 initiative.notes.push(note);
                 noteInput.value = '';
+                
+                // Log activity for note added
+                saveActivityToDB({
+                    type: 'note_added',
+                    icon: '💬',
+                    text: `Added note to ${initiative.name}`,
+                    meta: note.author, // Store only author, compute relative time at display
+                    timestamp: new Date().toISOString(),
+                    initiativeId: initiative.id,
+                    initiativeName: initiative.name
+                }).catch(err => console.error('Failed to log note activity:', err));
                 
                 renderNotes();
                 saveContext(); // Auto-save
