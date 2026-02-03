@@ -1,14 +1,14 @@
 /**
- * Configuration Module
- * Contains all application configuration and constants
+ * Configuration Module - Example Template
+ * Copy this file to config.js and fill in your actual values
+ * DO NOT commit config.js with real credentials to version control
  */
 
 // Supabase Configuration
-// NOTE: In production, these should be loaded from environment variables
-// For now, these are configured here for ease of setup
+// Get these from: Supabase Dashboard → Settings → API
 export const SUPABASE_CONFIG = {
-    url: 'https://kkqysoquhqoiwqoyphwp.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrcXlzb3F1aHFvaXdxb3lwaHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk5NjgzMjIsImV4cCI6MjA4NTU0NDMyMn0.YJl8sVng8S6TruNf-46DJiOV7U06MuLicPCaQw7LvPc'
+    url: 'YOUR_SUPABASE_URL_HERE',
+    anonKey: 'YOUR_SUPABASE_ANON_KEY_HERE'
 };
 
 // Timeline Configuration
@@ -46,9 +46,11 @@ export const STORAGE_KEYS = {
 };
 
 // Email Scheduler Configuration
+// Change these if your services run on different ports
 export const EMAIL_SCHEDULER_URL = 'http://localhost:3001';
 
 // JIRA Configuration
+// Change these based on your environment
 export const JIRA_PROXY_URL = 'http://localhost:8080/proxy';
 
 // Date Configuration

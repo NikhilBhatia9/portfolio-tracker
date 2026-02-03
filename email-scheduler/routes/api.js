@@ -21,6 +21,23 @@ async function exportData(req, res) {
                 error: 'Invalid data: initiatives array required' 
             });
         }
+        
+        if (initiatives.length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid data: initiatives array cannot be empty'
+            });
+        }
+        
+        // Validate initiative structure
+        for (const initiative of initiatives) {
+            if (!initiative.name || !initiative.status) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid data: each initiative must have name and status'
+                });
+            }
+        }
 
         // Log data to console (always in development mode)
         emailService.logPortfolioData(initiatives, summary, email);

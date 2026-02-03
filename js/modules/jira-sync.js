@@ -4,6 +4,7 @@
  */
 
 import { getInitiativeById, saveInitiative } from './database.js';
+import { JIRA_PROXY_URL, DEFAULT_INITIATIVE_DURATION_DAYS } from './config.js';
 
 // JIRA Configuration keys
 const JIRA_STORAGE_KEYS = {
@@ -195,7 +196,7 @@ function mapJiraIssueToInitiative(issue, fieldIds, keyInitiativeKeys) {
     // Extract dates
     const startDate = fields.created;
     const targetDate = fields.duedate || 
-        new Date(new Date(startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+        new Date(new Date(startDate).getTime() + DEFAULT_INITIATIVE_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString();
     
     // Determine if key initiative
     const isKeyInitiative = keyInitiativeKeys.has(issue.key);
