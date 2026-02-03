@@ -55,53 +55,56 @@
         /* Layout & Components */
         .app-shell {
             display: flex;
+            flex-direction: column;
             min-height: 100vh;
         }
 
-        .sidebar {
-            width: 100px;
+        .top-nav {
             background: var(--bg-secondary);
             backdrop-filter: blur(10px);
-            border-right: 1px solid var(--border-color);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 2rem 0;
-            position: sticky;
-            top: 0;
-            height: 100vh;
+            padding: 0 2rem;
             z-index: 100;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow-md);
+            gap: 2rem;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+            flex: 1;
         }
 
         .nav-item {
-            width: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            padding: 1rem 0;
+            padding: 1.25rem 2rem;
             cursor: pointer;
             color: var(--text-muted);
             transition: all 0.3s;
             text-decoration: none;
-            border-left: 3px solid transparent;
-            gap: 0.5rem;
+            border-bottom: 3px solid transparent;
+            gap: 0.75rem;
+            font-weight: 500;
+            font-size: 0.95rem;
         }
 
         .nav-item:hover {
             color: var(--text-primary);
-            background: rgba(59, 130, 246, 0.1);
+            background: rgba(59, 130, 246, 0.05);
         }
 
         .nav-item.active {
             color: var(--accent-color);
-            background: rgba(59, 130, 246, 0.15);
-            border-left-color: var(--accent-color);
+            background: rgba(59, 130, 246, 0.1);
+            border-bottom-color: var(--accent-color);
         }
 
         .nav-icon {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             fill: currentColor;
         }
 
@@ -117,9 +120,23 @@
 
         header {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: flex-start;
             margin-bottom: 2rem;
+            gap: 0.5rem;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+        }
+
+        header .subtitle {
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text-on-gradient);
+            opacity: 0.9;
+            margin: 0;
         }
 
         h1,
@@ -1118,41 +1135,41 @@
     </div>
 
     <div class="app-shell">
-        <nav class="sidebar">
-            <div class="nav-item active" id="btn-view-current" onclick="switchView('current')" title="Dashboard">
-                <svg class="nav-icon" viewBox="0 0 24 24">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-                </svg>
-                <span style="font-size: 0.7rem; font-weight: 500;">Dashboard</span>
+        <nav class="top-nav">
+            <div class="nav-tabs">
+                <div class="nav-item active" id="btn-view-current" onclick="switchView('current')" title="Dashboard">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+                    </svg>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" id="btn-view-timeline" onclick="switchView('timeline')" title="Timeline">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+                    </svg>
+                    <span>Timeline</span>
+                </div>
+                <div class="nav-item" id="btn-view-snapshots" onclick="switchView('snapshots')" title="History">
+                    <svg class="nav-icon" viewBox="0 0 24 24">
+                        <path
+                            d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                    </svg>
+                    <span>History</span>
+                </div>
             </div>
-            <div class="nav-item" id="btn-view-timeline" onclick="switchView('timeline')" title="Timeline">
-                <svg class="nav-icon" viewBox="0 0 24 24">
-                    <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
-                </svg>
-                <span style="font-size: 0.7rem; font-weight: 500;">Timeline</span>
-            </div>
-            <div class="nav-item" id="btn-view-snapshots" onclick="switchView('snapshots')" title="History">
-                <svg class="nav-icon" viewBox="0 0 24 24">
-                    <path
-                        d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
-                </svg>
-                <span style="font-size: 0.7rem; font-weight: 500;">History</span>
-            </div>
-            <div style="flex-grow: 1;"></div>
             <div class="nav-item" id="btn-settings-sidebar" onclick="openSettings()" title="Settings">
                 <svg class="nav-icon" viewBox="0 0 24 24">
                     <path
                         d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
                 </svg>
-                <span style="font-size: 0.7rem; font-weight: 500;">Data</span>
+                <span>Data</span>
             </div>
         </nav>
 
         <div class="app-container">
             <header>
-                <h1
-                    style="color: var(--text-on-gradient); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">
-                    Portfolio Tracker | Platform Development & Integration</h1>
+                <h1 style="color: var(--text-on-gradient); text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">Portfolio Tracker</h1>
+                <div class="subtitle" style="text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);">Platform Development & Integration</div>
             </header>
 
             <!-- Current View -->
@@ -1245,7 +1262,7 @@
 
                     <!-- Timeline Filters -->
                     <div class="form-grid"
-                        style="grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
+                        style="grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
                         <div class="form-group">
                             <label style="font-size: 0.85rem; font-weight: 600;">&nbsp;</label>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -2779,6 +2796,16 @@ const loadState = async () => {
             function setCategoryFilter(category) {
                 appState.filterCategory = category;
                 render();
+                // Also re-render the initiatives list with current status filter
+                const activeTab = document.querySelector('.filter-tab.active');
+                let currentFilter = 'all';
+                if (activeTab) {
+                    const tabText = activeTab.textContent.trim().toLowerCase();
+                    if (tabText === 'active') currentFilter = 'active';
+                    else if (tabText === 'planned') currentFilter = 'planned';
+                    else if (tabText === 'at risk') currentFilter = 'risk';
+                }
+                renderInitiativesList(currentFilter);
             }
 
             function renderCategoryFilters() {
@@ -3013,6 +3040,11 @@ const loadState = async () => {
                     }
                 }
                 
+                // Apply category filter
+                if (appState.filterCategory && appState.filterCategory !== 'all') {
+                    filtered = filtered.filter(i => i.categories && i.categories.includes(appState.filterCategory));
+                }
+                
                 // Sort by target date (upcoming first)
                 filtered.sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate));
                 
@@ -3030,12 +3062,17 @@ const loadState = async () => {
                     if (i.status === 'risk') badgeClass = 'badge-risk';
                     if (i.status === 'completed') badgeClass = 'badge-completed';
                     
+                    // Format categories for display
+                    const categoriesHtml = i.categories && i.categories.length > 0 
+                        ? `<span>🏷️ ${i.categories.join(', ')}</span>`
+                        : '<span>🏷️ No categories</span>';
+                    
                     return `
-                        <div class="initiative-item" onclick="editInitiative(${i.id})" tabindex="0" role="button" onkeypress="if(event.key==='Enter'||event.key===' ')editInitiative(${i.id})">
+                        <div class="initiative-item" onclick="openModal('${i.id}')" tabindex="0" role="button" onkeypress="if(event.key==='Enter'||event.key===' ')openModal('${i.id}')">
                             <div class="initiative-content">
                                 <div class="initiative-title">${i.name}</div>
                                 <div class="initiative-meta">
-                                    <span>👤 ${i.owner}</span>
+                                    ${categoriesHtml}
                                     <span>📅 Due ${targetDate}</span>
                                     ${isKey ? '<span>🔑 Key Initiative</span>' : ''}
                                 </div>
@@ -3076,12 +3113,37 @@ const loadState = async () => {
                                 i.status === 'active' ? 'In Progress' : 
                                 'Planned';
                     
+                    // Get upcoming phases for this initiative
+                    let phasesHtml = '';
+                    if (i.phases && i.phases.length > 0) {
+                        const upcomingPhases = i.phases
+                            .filter(p => {
+                                const phaseEnd = new Date(p.endDate);
+                                return phaseEnd >= today;
+                            })
+                            .sort((a, b) => new Date(a.endDate) - new Date(b.endDate))
+                            .slice(0, 3); // Show max 3 upcoming phases
+                        
+                        if (upcomingPhases.length > 0) {
+                            phasesHtml = '<div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--border-color); font-size: 0.75rem;">';
+                            phasesHtml += upcomingPhases.map(phase => {
+                                const phaseEndDate = new Date(phase.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                                let phaseIcon = '⏳';
+                                if (phase.status === 'completed') phaseIcon = '✅';
+                                else if (phase.status === 'active') phaseIcon = '🔄';
+                                return `<div style="margin: 0.25rem 0; color: var(--text-secondary);">${phaseIcon} ${phase.name} - ${phaseEndDate}</div>`;
+                            }).join('');
+                            phasesHtml += '</div>';
+                        }
+                    }
+                    
                     return `
                         <div class="timeline-item" onclick="openModal('${i.id}')" style="cursor:pointer;">
                             <div class="timeline-date">${dateStr}</div>
                             <div class="timeline-content">
                                 <div class="timeline-title">${i.name}</div>
                                 <div class="timeline-detail">${detail}</div>
+                                ${phasesHtml}
                             </div>
                         </div>
                     `;
