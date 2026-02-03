@@ -78,6 +78,20 @@
             white-space: nowrap;
         }
 
+        .app-title h1 {
+            color: var(--text-primary);
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .app-title .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 400;
+            margin: 0;
+        }
+
         .nav-tabs {
             display: flex;
             gap: 0;
@@ -1144,8 +1158,8 @@
     <div class="app-shell">
         <nav class="top-nav">
             <div class="app-title">
-                <h1 style="color: var(--text-primary); margin: 0; font-size: 1.5rem; font-weight: 600;">Portfolio Tracker</h1>
-                <div class="subtitle" style="color: var(--text-secondary); font-size: 0.75rem; font-weight: 400; margin: 0;">Platform Development & Integration</div>
+                <h1>Portfolio Tracker</h1>
+                <div class="subtitle">Platform Development & Integration</div>
             </div>
             <div class="nav-tabs">
                 <div class="nav-item active" id="btn-view-current" onclick="switchView('current')" title="Dashboard">
