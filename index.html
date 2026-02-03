@@ -3195,15 +3195,16 @@ const loadState = async () => {
                 // Calculate pagination
                 const totalItems = filtered.length;
                 const totalPages = Math.ceil(totalItems / appState.initiativesPerPage);
-                const currentPage = appState.initiativesPage;
                 
                 // Ensure current page is valid
-                if (currentPage > totalPages) {
+                if (appState.initiativesPage > totalPages && totalPages > 0) {
                     appState.initiativesPage = 1;
                 }
                 
+                const currentPage = appState.initiativesPage;
+                
                 // Get items for current page
-                const startIndex = (appState.initiativesPage - 1) * appState.initiativesPerPage;
+                const startIndex = (currentPage - 1) * appState.initiativesPerPage;
                 const endIndex = startIndex + appState.initiativesPerPage;
                 const paginatedItems = filtered.slice(startIndex, endIndex);
                 
@@ -3249,6 +3250,10 @@ const loadState = async () => {
                     return;
                 }
                 
+                // Sanitize filter to prevent XSS - only allow known filter values
+                const validFilters = ['all', 'active', 'planned', 'risk', 'completed'];
+                const safeFilter = validFilters.includes(filter) ? filter : 'all';
+                
                 const currentPage = appState.initiativesPage;
                 const startItem = (currentPage - 1) * appState.initiativesPerPage + 1;
                 const endItem = Math.min(currentPage * appState.initiativesPerPage, totalItems);
@@ -3256,7 +3261,7 @@ const loadState = async () => {
                 let html = '';
                 
                 // Previous button
-                html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1}, '${filter}')" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+                html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1}, '${safeFilter}')" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
                 
                 // Page numbers
                 const maxPageButtons = 5;
@@ -3270,7 +3275,7 @@ const loadState = async () => {
                 
                 // First page
                 if (startPage > 1) {
-                    html += `<button class="pagination-btn" onclick="goToPage(1, '${filter}')">1</button>`;
+                    html += `<button class="pagination-btn" onclick="goToPage(1, '${safeFilter}')">1</button>`;
                     if (startPage > 2) {
                         html += `<span class="pagination-info">...</span>`;
                     }
@@ -3278,7 +3283,7 @@ const loadState = async () => {
                 
                 // Page number buttons
                 for (let i = startPage; i <= endPage; i++) {
-                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}, '${filter}')">${i}</button>`;
+                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}, '${safeFilter}')">${i}</button>`;
                 }
                 
                 // Last page
@@ -3286,11 +3291,11 @@ const loadState = async () => {
                     if (endPage < totalPages - 1) {
                         html += `<span class="pagination-info">...</span>`;
                     }
-                    html += `<button class="pagination-btn" onclick="goToPage(${totalPages}, '${filter}')">${totalPages}</button>`;
+                    html += `<button class="pagination-btn" onclick="goToPage(${totalPages}, '${safeFilter}')">${totalPages}</button>`;
                 }
                 
                 // Next button
-                html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1}, '${filter}')" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+                html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1}, '${safeFilter}')" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
                 
                 // Info text
                 html += `<span class="pagination-info">Showing ${startItem}-${endItem} of ${totalItems}</span>`;
