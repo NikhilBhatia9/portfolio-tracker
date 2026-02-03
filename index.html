@@ -1856,6 +1856,37 @@ async function getAllInitiativesFromSupabase() {
     }));
 }
 
+// Supabase: Get single initiative by ID
+async function getInitiativeFromSupabase(id) {
+    const { data, error } = await supabaseClient
+        .from('initiatives')
+        .select('*')
+        .eq('id', id)
+        .single();
+    
+    if (error) {
+        // Return null if not found (not an error for new initiatives)
+        if (error.code === 'PGRST116') return null;
+        throw error;
+    }
+    
+    // Transform database format to app format
+    return {
+        id: data.id,
+        name: data.name,
+        owner: data.owner,
+        status: data.status,
+        startDate: data.start_date,
+        targetDate: data.target_date,
+        categories: data.categories || [],
+        tags: data.tags || [],
+        phases: data.phases || [],
+        keyInitiative: data.key_initiative || 'No',
+        created_at: data.created_at,
+        updated_at: data.updated_at
+    };
+}
+
 // Supabase: Save initiative
 async function saveInitiativeToSupabase(initiative) {
     const dbFormat = {
@@ -2209,6 +2240,20 @@ async function getAllInitiatives() {
     const store = transaction.objectStore('initiatives');
     const request = store.getAll();
     request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function getInitiativeFromDB(id) {
+  if (useSupabase) {
+    return await getInitiativeFromSupabase(id);
+  }
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(['initiatives'], 'readonly');
+    const store = transaction.objectStore('initiatives');
+    const request = store.get(id);
+    request.onsuccess = () => resolve(request.result || null);
     request.onerror = () => reject(request.error);
   });
 }
@@ -3923,6 +3968,33 @@ const loadState = async () => {
                 }
             }
 
+            // Merge JIRA data with existing Supabase data
+            // Preserves user-modified fields: phases, tags, manually added categories
+            function mergeInitiativeData(jiraData, existingData) {
+                if (!existingData) {
+                    // New initiative, return JIRA data as-is
+                    return jiraData;
+                }
+                
+                // Merge categories: combine JIRA categories with existing ones (deduplicate)
+                const mergedCategories = [...new Set([
+                    ...(existingData.categories || []),
+                    ...(jiraData.categories || [])
+                ])];
+                
+                // Return merged data:
+                // - Update fields from JIRA: id, name, owner, status, dates, keyInitiative
+                // - Preserve from existing: phases, tags
+                // - Merge: categories
+                return {
+                    ...jiraData,
+                    categories: mergedCategories,
+                    tags: existingData.tags || [],
+                    phases: existingData.phases || [],
+                    created_at: existingData.created_at // Preserve original creation time
+                };
+            }
+
             async function syncJira() {
     const domain = document.getElementById('jira-domain').value.replace('https://', '').replace(/\/.*/, '');
     const email = document.getElementById('jira-email').value;
@@ -4096,15 +4168,30 @@ const loadState = async () => {
             };
         });
 
-        // 5. Save to database
-        statusDiv.innerText = 'Saving to database...';
+        // 5. Merge with existing data and save to database
+        statusDiv.innerText = 'Merging with existing data and saving...';
         let count = 0;
-        for (const newItem of mappedInitiatives) {
+        for (const jiraItem of mappedInitiatives) {
             try {
-                await saveInitiativeToDB(newItem);
+                // Fetch existing initiative from database
+                const existingItem = await getInitiativeFromDB(jiraItem.id);
+                
+                // Merge JIRA data with existing data
+                const mergedItem = mergeInitiativeData(jiraItem, existingItem);
+                
+                console.log(`${existingItem ? '🔄 Merging' : '✨ Creating'} initiative:`, jiraItem.id, {
+                    jiraCategories: jiraItem.categories,
+                    existingCategories: existingItem?.categories,
+                    mergedCategories: mergedItem.categories,
+                    preservedPhases: mergedItem.phases?.length || 0,
+                    preservedTags: mergedItem.tags?.length || 0
+                });
+                
+                // Save merged data
+                await saveInitiativeToDB(mergedItem);
                 count++;
             } catch (error) {
-                console.error(`Failed to save ${newItem.id}:`, error);
+                console.error(`Failed to save ${jiraItem.id}:`, error);
             }
         }
 
