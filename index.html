@@ -1910,6 +1910,7 @@ async function getAllInitiativesFromSupabase() {
         categories: item.categories || [],
         tags: item.tags || [],
         phases: item.phases || [],
+        notes: item.notes || [],
         keyInitiative: item.key_initiative || 'No',
         created_at: item.created_at,
         updated_at: item.updated_at
@@ -1950,6 +1951,7 @@ async function getInitiativeFromSupabase(id) {
         categories: data.categories || [],
         tags: data.tags || [],
         phases: data.phases || [],
+        notes: data.notes || [],
         keyInitiative: data.key_initiative || 'No',
         created_at: data.created_at,
         updated_at: data.updated_at
@@ -1968,6 +1970,7 @@ async function saveInitiativeToSupabase(initiative) {
         categories: initiative.categories || [],
         tags: initiative.tags || [],
         phases: initiative.phases || [],
+        notes: initiative.notes || [],
         key_initiative: initiative.keyInitiative || 'No',
         updated_at: new Date().toISOString()
     };
