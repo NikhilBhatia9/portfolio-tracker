@@ -3682,75 +3682,48 @@ const loadState = async () => {
             }
             
             // Render Recent Activity
-            function renderRecentActivity() {
+            async function renderRecentActivity() {
                 const container = document.getElementById('recent-activity');
                 
-                // Get recent changes from initiatives
-                const activities = [];
-                const now = Date.now();
-                
-                appState.initiatives.forEach(i => {
-                    const createdDate = i.createdDate ? new Date(i.createdDate) : null;
-                    const updatedDate = i.updatedDate ? new Date(i.updatedDate) : null;
+                try {
+                    // Fetch activities from database
+                    const activities = await getAllActivitiesFromDB();
                     
-                    if (i.status === 'completed' && updatedDate && (now - updatedDate) < 7 * 24 * 60 * 60 * 1000) {
-                        activities.push({
-                            icon: '✓',
-                            text: `${i.name} marked as completed`,
-                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
-                            date: updatedDate
-                        });
-                    } else if (updatedDate && (now - updatedDate) < 3 * 24 * 60 * 60 * 1000) {
-                        activities.push({
-                            icon: '📝',
-                            text: `Updated ${i.name}`,
-                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
-                            date: updatedDate
-                        });
+                    if (activities.length === 0) {
+                        container.innerHTML = `
+                            <div class="activity-item">
+                                <div class="activity-icon">📊</div>
+                                <div class="activity-content">
+                                    <div class="activity-text">Portfolio tracker initialized</div>
+                                    <div class="activity-meta">System • Today</div>
+                                </div>
+                            </div>
+                        `;
+                        return;
                     }
                     
-                    // Check for notes added recently
-                    if (i.notes && i.notes.length > 0) {
-                        const recentNotes = i.notes.filter(n => {
-                            const noteDate = new Date(n.date);
-                            return (now - noteDate) < 7 * 24 * 60 * 60 * 1000;
-                        });
-                        recentNotes.forEach(n => {
-                            activities.push({
-                                icon: '💬',
-                                text: `Added note to ${i.name}`,
-                                meta: `${n.author} • ${getRelativeTime(new Date(n.date))}`,
-                                date: new Date(n.date)
-                            });
-                        });
-                    }
-                });
-                
-                // Sort by date (most recent first)
-                activities.sort((a, b) => b.date - a.date);
-                
-                if (activities.length === 0) {
+                    // Display up to 10 activities (database query already limits to 10)
+                    container.innerHTML = activities.map(a => `
+                        <div class="activity-item">
+                            <div class="activity-icon">${a.icon}</div>
+                            <div class="activity-content">
+                                <div class="activity-text">${a.text}</div>
+                                <div class="activity-meta">${a.meta}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Failed to load activities:', error);
                     container.innerHTML = `
                         <div class="activity-item">
-                            <div class="activity-icon">📊</div>
+                            <div class="activity-icon">⚠️</div>
                             <div class="activity-content">
-                                <div class="activity-text">Portfolio tracker initialized</div>
-                                <div class="activity-meta">System • Today</div>
+                                <div class="activity-text">Failed to load activities</div>
+                                <div class="activity-meta">System • Error</div>
                             </div>
                         </div>
                     `;
-                    return;
                 }
-                
-                container.innerHTML = activities.slice(0, 6).map(a => `
-                    <div class="activity-item">
-                        <div class="activity-icon">${a.icon}</div>
-                        <div class="activity-content">
-                            <div class="activity-text">${a.text}</div>
-                            <div class="activity-meta">${a.meta}</div>
-                        </div>
-                    </div>
-                `).join('');
             }
             
             // Helper function for relative time
