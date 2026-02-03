@@ -1856,7 +1856,16 @@ async function getAllInitiativesFromSupabase() {
     }));
 }
 
-// Supabase: Get single initiative by ID
+/**
+ * Get a single initiative by ID from Supabase
+ * @param {string} id - The initiative ID to fetch
+ * @returns {Promise<Object|null>} Initiative object in app format, or null if not found
+ * @throws {Error} If Supabase query fails (except for not found errors)
+ * 
+ * Error handling:
+ * - PGRST116 (not found): Returns null - expected for new initiatives from JIRA
+ * - Other errors: Throws error - indicates actual database/connection issues
+ */
 async function getInitiativeFromSupabase(id) {
     const { data, error } = await supabaseClient
         .from('initiatives')
@@ -2244,6 +2253,16 @@ async function getAllInitiatives() {
   });
 }
 
+/**
+ * Get a single initiative by ID from the database (abstraction layer)
+ * Routes to Supabase or IndexedDB based on useSupabase flag
+ * @param {string} id - The initiative ID to fetch
+ * @returns {Promise<Object|null>} Initiative object, or null if not found in either storage backend
+ * 
+ * This provides a consistent interface regardless of storage backend:
+ * - Supabase: Returns transformed data or null
+ * - IndexedDB: Returns stored data or null
+ */
 async function getInitiativeFromDB(id) {
   if (useSupabase) {
     return await getInitiativeFromSupabase(id);
@@ -3968,8 +3987,30 @@ const loadState = async () => {
                 }
             }
 
-            // Merge JIRA data with existing Supabase data
-            // Preserves user-modified fields: phases, tags, manually added categories
+            /**
+             * Merge JIRA data with existing Supabase/IndexedDB data
+             * Preserves user-modified fields while updating JIRA-sourced fields
+             * 
+             * @param {Object} jiraData - Initiative data from JIRA sync
+             * @param {Object|null} existingData - Existing initiative data from database, or null for new initiatives
+             * @returns {Object} Merged initiative object
+             * 
+             * Merge Strategy:
+             * - New initiatives (existingData is null): Return jiraData as-is
+             * - Existing initiatives: Intelligent merge
+             * 
+             * Fields UPDATED from JIRA (source of truth):
+             * - id, name, owner, status, startDate, targetDate, keyInitiative
+             * 
+             * Fields PRESERVED from existing data (user modifications):
+             * - phases: User-defined project milestones with dates
+             * - tags: User-defined tags
+             * - created_at: Original creation timestamp
+             * 
+             * Fields MERGED (combine both sources):
+             * - categories: Combines JIRA categories (from Technology Squad) with manually added categories
+             *   Uses Set to deduplicate - prevents duplicate entries
+             */
             function mergeInitiativeData(jiraData, existingData) {
                 if (!existingData) {
                     // New initiative, return JIRA data as-is
