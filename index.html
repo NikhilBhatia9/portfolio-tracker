@@ -4024,11 +4024,13 @@ const loadState = async () => {
                 ])];
                 
                 // Return merged data:
-                // - Update fields from JIRA: id, name, owner, status, dates, keyInitiative
-                // - Preserve from existing: phases, tags
+                // - Update fields from JIRA: id, name, owner, status, keyInitiative
+                // - Preserve from existing: phases, tags, dates (startDate, targetDate)
                 // - Merge: categories
                 return {
                     ...jiraData,
+                    startDate: existingData.startDate || jiraData.startDate, // Preserve manually edited dates
+                    targetDate: existingData.targetDate || jiraData.targetDate, // Preserve manually edited dates
                     categories: mergedCategories,
                     tags: existingData.tags || [],
                     phases: existingData.phases || [],
