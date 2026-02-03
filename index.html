@@ -3247,8 +3247,18 @@ const loadState = async () => {
                     filtered = filtered.filter(i => i.categories && i.categories.includes(appState.filterCategory));
                 }
                 
-                // Sort by target date (upcoming first)
-                filtered.sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate));
+                // Sort by Key Initiative first (Key Initiatives on top), then by target date (upcoming first)
+                filtered.sort((a, b) => {
+                    const aIsKey = a.keyInitiative === 'Yes';
+                    const bIsKey = b.keyInitiative === 'Yes';
+                    
+                    // If one is key initiative and other is not, key initiative comes first
+                    if (aIsKey && !bIsKey) return -1;
+                    if (!aIsKey && bIsKey) return 1;
+                    
+                    // If both are same type (both key or both not key), sort by target date
+                    return new Date(a.targetDate) - new Date(b.targetDate);
+                });
                 
                 if (filtered.length === 0) {
                     container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted)">No initiatives found</div>';
