@@ -2745,7 +2745,7 @@ const loadState = async () => {
                 // Convert id to number if it's a string representation of a number
                 const numericId = typeof id === 'string' && !isNaN(id) ? parseInt(id, 10) : id;
                 editingId = numericId;
-                const note = appState.initiatives.find(i => i.id == numericId);
+                const note = appState.initiatives.find(i => i.id === numericId);
                 if (!note) return;
                 editingCopy = JSON.parse(JSON.stringify(note));
 
