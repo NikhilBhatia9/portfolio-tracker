@@ -1040,6 +1040,49 @@
             color: var(--success-color);
         }
         
+        /* Progress Bar */
+        .initiative-progress {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .initiative-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), var(--purple));
+            transition: width 0.3s ease;
+            border-radius: 2px;
+        }
+        
+        .initiative-progress-bar.completed {
+            background: var(--success-color);
+        }
+        
+        .initiative-progress-bar.risk {
+            background: var(--risk-color);
+        }
+        
+        /* Lifecycle Stage Badge */
+        .lifecycle-stage {
+            display: inline-block;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--purple);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            margin-left: 0.25rem;
+        }
+        
+        /* Phase Info */
+        .phase-info {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        
         /* Pagination Controls */
         .pagination-controls {
             display: flex;
@@ -1309,6 +1352,12 @@
                         <h3>Total Initiatives</h3>
                         <div class="value" id="m-total">0</div>
                     </div>
+                    <div class="card metric-card" style="border-top: 3px solid var(--purple)">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">💯</div>
+                        <h3>Health Score</h3>
+                        <div class="value" style="color:var(--purple)" id="m-health">-</div>
+                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem;" id="m-health-label">Calculating...</div>
+                    </div>
                     <div class="card metric-card" id="filter-completed"
                         style="border-top: 3px solid var(--success-color)">
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
@@ -1332,6 +1381,17 @@
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
                         <h3>At Risk</h3>
                         <div class="value" style="color:var(--risk-color)" id="m-risk">0</div>
+                    </div>
+                </div>
+                
+                <!-- Portfolio Summary Section (Executive View) -->
+                <div class="card" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);">
+                    <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">📈</span>
+                        Portfolio Summary
+                    </h3>
+                    <div id="portfolio-summary" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <!-- Summary items injected by JS -->
                     </div>
                 </div>
 
@@ -3316,6 +3376,135 @@ const loadState = async () => {
                 render();
             }
 
+            // Calculate and render portfolio health score
+            function renderPortfolioHealth(initiatives) {
+                if (initiatives.length === 0) {
+                    document.getElementById('m-health').innerText = '-';
+                    document.getElementById('m-health-label').innerText = 'No data';
+                    return;
+                }
+                
+                const completed = initiatives.filter(i => i.status === 'completed').length;
+                const active = initiatives.filter(i => i.status === 'active').length;
+                const risk = initiatives.filter(i => i.status === 'risk').length;
+                const planned = initiatives.filter(i => i.status === 'planned').length;
+                
+                // Calculate health score (0-100)
+                // Formula: Base score from completion rate, penalties for at-risk initiatives
+                const completionRate = (completed / initiatives.length) * 100;
+                const activeRate = (active / initiatives.length) * 100;
+                const riskPenalty = (risk / initiatives.length) * 50; // Risk initiatives heavily penalize health
+                
+                let healthScore = Math.round((completionRate * 0.4) + (activeRate * 0.4) - riskPenalty + 20);
+                healthScore = Math.max(0, Math.min(100, healthScore)); // Clamp between 0-100
+                
+                let healthLabel = 'Poor';
+                if (healthScore >= 80) healthLabel = 'Excellent';
+                else if (healthScore >= 65) healthLabel = 'Good';
+                else if (healthScore >= 50) healthLabel = 'Fair';
+                
+                document.getElementById('m-health').innerText = healthScore;
+                document.getElementById('m-health-label').innerText = healthLabel;
+            }
+            
+            // Render portfolio summary with key insights
+            function renderPortfolioSummary(initiatives) {
+                const container = document.getElementById('portfolio-summary');
+                if (!container) return;
+                
+                if (initiatives.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">No initiatives to analyze</div>';
+                    return;
+                }
+                
+                // Calculate insights
+                const now = new Date();
+                const overdue = initiatives.filter(i => 
+                    i.status !== 'completed' && new Date(i.targetDate) < now
+                ).length;
+                
+                const dueThisMonth = initiatives.filter(i => {
+                    if (i.status === 'completed') return false;
+                    const target = new Date(i.targetDate);
+                    return target.getMonth() === now.getMonth() && target.getFullYear() === now.getFullYear();
+                }).length;
+                
+                const keyInitiatives = initiatives.filter(i => i.keyInitiative === 'Yes').length;
+                
+                // Calculate average lifecycle progress
+                let totalProgress = 0;
+                let initiativesWithPhases = 0;
+                initiatives.forEach(i => {
+                    if (i.phases && i.phases.length > 0) {
+                        const completed = i.phases.filter(p => p.status === 'completed').length;
+                        totalProgress += (completed / i.phases.length) * 100;
+                        initiativesWithPhases++;
+                    }
+                });
+                const avgProgress = initiativesWithPhases > 0 
+                    ? Math.round(totalProgress / initiativesWithPhases) 
+                    : 0;
+                
+                // Count initiatives by lifecycle stage
+                const lifecycleStages = {
+                    'Planning': 0,
+                    'Execution': 0,
+                    'Delivered': 0
+                };
+                
+                initiatives.forEach(i => {
+                    if (i.status === 'completed') {
+                        lifecycleStages['Delivered']++;
+                    } else if (i.status === 'planned') {
+                        lifecycleStages['Planning']++;
+                    } else {
+                        lifecycleStages['Execution']++;
+                    }
+                });
+                
+                container.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">⏰</span>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: ${overdue > 0 ? 'var(--risk-color)' : 'var(--success-color)'};">${overdue}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Overdue</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">📅</span>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-color);">${dueThisMonth}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Due This Month</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">🔑</span>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning-color);">${keyInitiatives}</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Key Initiatives</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="font-size: 1.5rem;">📊</span>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--purple);">${avgProgress}%</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Avg Progress</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; grid-column: span 2;">
+                        <span style="font-size: 1.5rem;">🎯</span>
+                        <div style="flex: 1;">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Lifecycle Distribution</div>
+                            <div style="display: flex; gap: 0.5rem; font-size: 0.8rem;">
+                                <span>📋 Planning: <strong>${lifecycleStages['Planning']}</strong></span>
+                                <span>🚀 Execution: <strong>${lifecycleStages['Execution']}</strong></span>
+                                <span>✅ Delivered: <strong>${lifecycleStages['Delivered']}</strong></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
             // --- RENDER ---
             function render() {
                 const initiatives = appState.initiatives;
@@ -3328,6 +3517,12 @@ const loadState = async () => {
                 document.getElementById('m-active').innerText = initiatives.filter(i => i.status === 'active' || i.status === 'risk').length;
                 document.getElementById('m-planned').innerText = initiatives.filter(i => i.status && i.status.toLowerCase() === 'planned').length;
                 document.getElementById('m-risk').innerText = initiatives.filter(i => i.status === 'risk').length;
+                
+                // Calculate Portfolio Health Score
+                renderPortfolioHealth(initiatives);
+                
+                // Render Portfolio Summary
+                renderPortfolioSummary(initiatives);
 
                 // Update Active Filter Class
                 ['all', 'completed', 'active', 'planned', 'risk'].forEach(s => {
@@ -3528,14 +3723,73 @@ const loadState = async () => {
                         ? `<span>🏷️ ${i.categories.join(', ')}</span>`
                         : '<span>🏷️ No categories</span>';
                     
+                    // Calculate progress based on phases
+                    let progress = 0;
+                    let currentPhaseInfo = '';
+                    let lifecycleStage = 'Planning';
+                    
+                    if (i.status === 'completed') {
+                        progress = 100;
+                        lifecycleStage = 'Delivered';
+                    } else if (i.phases && i.phases.length > 0) {
+                        const completedPhases = i.phases.filter(p => p.status === 'completed').length;
+                        progress = Math.round((completedPhases / i.phases.length) * 100);
+                        
+                        // Find current active phase
+                        const now = new Date();
+                        const activePhase = i.phases.find(p => {
+                            const start = new Date(p.startDate);
+                            const end = new Date(p.endDate);
+                            return start <= now && now <= end && p.status !== 'completed';
+                        });
+                        
+                        if (activePhase) {
+                            const daysInPhase = Math.floor((now - new Date(activePhase.startDate)) / (1000 * 60 * 60 * 24));
+                            currentPhaseInfo = `📍 ${activePhase.name} (Day ${daysInPhase})`;
+                            lifecycleStage = activePhase.name;
+                        } else {
+                            // Find next upcoming phase
+                            const upcomingPhase = i.phases.find(p => new Date(p.startDate) > now && p.status !== 'completed');
+                            if (upcomingPhase) {
+                                currentPhaseInfo = `⏭️ Next: ${upcomingPhase.name}`;
+                                lifecycleStage = upcomingPhase.name;
+                            } else if (completedPhases > 0) {
+                                lifecycleStage = 'Execution';
+                            }
+                        }
+                    } else {
+                        // No phases defined - use status to determine stage
+                        if (i.status === 'planned') {
+                            lifecycleStage = 'Planning';
+                        } else if (i.status === 'active' || i.status === 'risk') {
+                            lifecycleStage = 'Execution';
+                            // Calculate basic progress based on time elapsed
+                            const start = new Date(i.startDate);
+                            const end = new Date(i.targetDate);
+                            const now = new Date();
+                            const total = end - start;
+                            const elapsed = now - start;
+                            progress = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+                        }
+                    }
+                    
+                    const progressBarClass = i.status === 'completed' ? 'completed' : (i.status === 'risk' ? 'risk' : '');
+                    
                     return `
                         <div class="initiative-item" onclick="openModal('${i.id}')" tabindex="0" role="button" onkeypress="if(event.key==='Enter'||event.key===' ')openModal('${i.id}')">
                             <div class="initiative-content">
-                                <div class="initiative-title">${i.name}</div>
+                                <div class="initiative-title">
+                                    ${i.name}
+                                    <span class="lifecycle-stage">${lifecycleStage}</span>
+                                </div>
                                 <div class="initiative-meta">
                                     ${categoriesHtml}
                                     <span>📅 Due ${targetDate}</span>
                                     ${isKey ? '<span>🔑 Key Initiative</span>' : ''}
+                                </div>
+                                ${currentPhaseInfo ? `<div class="phase-info">${currentPhaseInfo}</div>` : ''}
+                                <div class="initiative-progress">
+                                    <div class="initiative-progress-bar ${progressBarClass}" style="width: ${progress}%"></div>
                                 </div>
                             </div>
                             <span class="initiative-badge ${badgeClass}">${i.status.charAt(0).toUpperCase() + i.status.slice(1)}</span>
