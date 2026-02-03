@@ -128,17 +128,21 @@
         }
 
         .btn {
-            background: var(--bg-card);
+            background: var(--bg-secondary);
             color: var(--text-primary);
             border: 1px solid var(--border-color);
             padding: 0.5rem 1rem;
             border-radius: var(--radius-md);
             cursor: pointer;
             font-size: 0.9rem;
+            transition: all 0.2s;
         }
 
         .btn:hover {
-            background: var(--bg-hover);
+            background: var(--bg-accent);
+            border-color: var(--accent-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-primary {
@@ -218,12 +222,6 @@
         .metric-card.clickable:hover {
             transform: translateY(-4px);
             box-shadow: 0 25px 30px -5px rgb(0 0 0 / 0.2);
-        }
-
-        .metric-card.active {
-            background-color: rgba(59, 130, 246, 0.05);
-            border-color: var(--accent-color);
-            border-width: 2px;
         }
         
         /* Individual stat card colors */
@@ -672,7 +670,7 @@
             padding: 0.5rem;
             border: 1px solid var(--border-color);
             border-radius: 4px;
-            background: var(--bg-card);
+            background: var(--bg-secondary);
             color: var(--text-primary);
             font-size: 0.875rem;
             cursor: pointer;
@@ -681,17 +679,19 @@
 
         input[type="date"]:hover {
             border-color: var(--accent-color);
+            background: var(--bg-primary);
         }
 
         input[type="date"]:focus {
             outline: none;
             border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+            background: var(--bg-secondary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator {
             cursor: pointer;
-            filter: invert(0.7);
+            filter: invert(0.5) sepia(1) saturate(5) hue-rotate(190deg);
         }
 
         .phase-input {
@@ -884,20 +884,7 @@
         .initiative-item:hover {
             background: var(--bg-primary);
             transform: translateX(4px);
-        }
-        
-        .initiative-checkbox {
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border-color);
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-        
-        .initiative-checkbox:hover {
-            border-color: var(--accent-color);
+            box-shadow: var(--shadow-md);
         }
         
         .initiative-content {
@@ -1163,40 +1150,39 @@
         <div class="app-container">
             <header>
                 <h1
-                    style="background: linear-gradient(to right, var(--text-primary), var(--accent-color)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">
+                    style="color: white; text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);">
                     Portfolio Tracker | Platform Development & Integration</h1>
             </header>
 
             <!-- Current View -->
             <div id="view-current">
-                <!-- Category Filters -->
-                <div class="category-pills" id="category-filters"
-                    style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-                    <!-- Pills injected by JS -->
-                </div>
-
                 <div class="metrics-grid">
-                    <div class="card metric-card clickable" id="filter-all" onclick="setFilter('all')">
+                    <div class="card metric-card" id="filter-all">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📊</div>
                         <h3>Total Initiatives</h3>
                         <div class="value" id="m-total">0</div>
                     </div>
-                    <div class="card metric-card clickable" id="filter-completed"
-                        style="border-top: 3px solid var(--success-color)" onclick="setFilter('completed')">
+                    <div class="card metric-card" id="filter-completed"
+                        style="border-top: 3px solid var(--success-color)">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">✅</div>
                         <h3>Completed</h3>
                         <div class="value" style="color:var(--success-color)" id="m-completed">0</div>
                     </div>
-                    <div class="card metric-card clickable" id="filter-active"
-                        style="border-top: 3px solid var(--accent-color)" onclick="setFilter('active')">
+                    <div class="card metric-card" id="filter-active"
+                        style="border-top: 3px solid var(--accent-color)">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚀</div>
                         <h3>Active</h3>
                         <div class="value" style="color:var(--accent-color)" id="m-active">0</div>
                     </div>
-                    <div class="card metric-card clickable" id="filter-planned"
-                        style="border-top: 3px solid var(--text-secondary)" onclick="setFilter('planned')">
+                    <div class="card metric-card" id="filter-planned"
+                        style="border-top: 3px solid var(--text-secondary)">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
                         <h3>Planned</h3>
                         <div class="value" style="color:var(--text-secondary)" id="m-planned">0</div>
                     </div>
-                    <div class="card metric-card clickable" id="filter-risk"
-                        style="border-top: 3px solid var(--risk-color)" onclick="setFilter('risk')">
+                    <div class="card metric-card" id="filter-risk"
+                        style="border-top: 3px solid var(--risk-color)">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">⚠️</div>
                         <h3>At Risk</h3>
                         <div class="value" style="color:var(--risk-color)" id="m-risk">0</div>
                     </div>
@@ -1214,6 +1200,11 @@
                                 <button class="filter-tab" onclick="filterInitiatives('planned')">Planned</button>
                                 <button class="filter-tab" onclick="filterInitiatives('risk')">At Risk</button>
                             </div>
+                        </div>
+                        <!-- Category Filters -->
+                        <div class="category-pills" id="category-filters"
+                            style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-accent); border-radius: var(--radius-md);">
+                            <!-- Pills injected by JS -->
                         </div>
                         <div class="initiative-list" id="initiative-list">
                             <!-- Initiative items populated by JavaScript -->
@@ -1253,51 +1244,52 @@
 
                     <!-- Timeline Filters -->
                     <div class="form-grid"
-                        style="grid-template-columns: repeat(5, 1fr); gap: 0.5rem; margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                        style="grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 1.5rem; background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">&nbsp;</label>
+                            <label style="font-size: 0.85rem; font-weight: 600;">&nbsp;</label>
                             <div style="display: flex; align-items: center; gap: 0.5rem;">
                                 <input type="checkbox" id="filter-tl-key" 
-                                    onchange="updateTimelineFilters('key', this.checked)" />
-                                <span style="font-size: 0.8rem;">Show only key initiatives</span>
+                                    onchange="updateTimelineFilters('key', this.checked)" 
+                                    style="width: 18px; height: 18px; cursor: pointer;" />
+                                <span style="font-size: 0.85rem;">Key initiatives only</span>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">Name</label>
-                            <input type="text" id="filter-tl-name" placeholder="Filter Name..."
-                                style="font-size: 0.8rem; padding: 4px;"
+                            <label style="font-size: 0.85rem; font-weight: 600;">Name</label>
+                            <input type="text" id="filter-tl-name" placeholder="Filter by name..."
+                                style="font-size: 0.875rem; padding: 0.5rem;"
                                 oninput="updateTimelineFilters('name', this.value)">
                         </div>
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">Owner</label>
-                            <input type="text" id="filter-tl-owner" placeholder="Filter Owner..."
-                                style="font-size: 0.8rem; padding: 4px;"
+                            <label style="font-size: 0.85rem; font-weight: 600;">Owner</label>
+                            <input type="text" id="filter-tl-owner" placeholder="Filter by owner..."
+                                style="font-size: 0.875rem; padding: 0.5rem;"
                                 oninput="updateTimelineFilters('owner', this.value)">
                         </div>
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">Status</label>
-                            <div id="filter-tl-status" style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.75rem;">
-                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-                                    <input type="checkbox" value="planned" onchange="updateTimelineStatusFilter()" />
+                            <label style="font-size: 0.85rem; font-weight: 600;">Status</label>
+                            <div id="filter-tl-status" style="display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.85rem;">
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" value="planned" onchange="updateTimelineStatusFilter()" style="width: 16px; height: 16px; cursor: pointer;" />
                                     <span>Planned</span>
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-                                    <input type="checkbox" value="active" onchange="updateTimelineStatusFilter()" />
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" value="active" onchange="updateTimelineStatusFilter()" style="width: 16px; height: 16px; cursor: pointer;" />
                                     <span>Active</span>
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-                                    <input type="checkbox" value="risk" onchange="updateTimelineStatusFilter()" />
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" value="risk" onchange="updateTimelineStatusFilter()" style="width: 16px; height: 16px; cursor: pointer;" />
                                     <span>Risk</span>
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 0.3rem; cursor: pointer;">
-                                    <input type="checkbox" value="completed" onchange="updateTimelineStatusFilter()" />
+                                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                    <input type="checkbox" value="completed" onchange="updateTimelineStatusFilter()" style="width: 16px; height: 16px; cursor: pointer;" />
                                     <span>Completed</span>
                                 </label>
                             </div>
                         </div>
                         <div class="form-group">
-                            <label style="font-size: 0.75rem;">Before Date</label>
-                            <input type="date" id="filter-tl-date" style="font-size: 0.8rem; padding: 4px;"
+                            <label style="font-size: 0.85rem; font-weight: 600;">Before Date</label>
+                            <input type="date" id="filter-tl-date" style="font-size: 0.875rem; padding: 0.5rem;"
                                 onchange="updateTimelineFilters('targetDate', this.value)">
                         </div>
                     </div>
@@ -1381,7 +1373,7 @@
             <div class="modal-content card">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2>Initiative Details</h2>
-                    <button class="btn" onclick="closeModal()">✕</button>
+                    <button class="btn" onclick="closeModal()" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border-radius: 50%;">✕</button>
                 </div>
 
                 <!-- Editable Fields -->
@@ -1490,7 +1482,7 @@
             <div class="modal-content card" style="width: 500px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <h2>Jira Data Source</h2>
-                    <button class="btn" onclick="closeSettings()">✕</button>
+                    <button class="btn" onclick="closeSettings()" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border-radius: 50%;">✕</button>
                 </div>
 
                 <div class="alert"
@@ -3038,8 +3030,7 @@ const loadState = async () => {
                     if (i.status === 'completed') badgeClass = 'badge-completed';
                     
                     return `
-                        <div class="initiative-item">
-                            <div class="initiative-checkbox"></div>
+                        <div class="initiative-item" onclick="editInitiative(${i.id})">
                             <div class="initiative-content">
                                 <div class="initiative-title">${i.name}</div>
                                 <div class="initiative-meta">
@@ -3059,9 +3050,15 @@ const loadState = async () => {
                 const initiatives = appState.initiatives;
                 const container = document.getElementById('upcoming-milestones');
                 
-                // Get upcoming initiatives sorted by target date
+                // Get upcoming initiatives (only future dates) sorted by target date
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); // Set to start of day for comparison
+                
                 const upcoming = initiatives
-                    .filter(i => i.status !== 'completed')
+                    .filter(i => {
+                        const targetDate = new Date(i.targetDate);
+                        return i.status !== 'completed' && targetDate >= today;
+                    })
                     .sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate))
                     .slice(0, 5);
                 
