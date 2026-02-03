@@ -2675,6 +2675,9 @@ const loadState = async () => {
   }
   
   try {
+    // Get the old initiative to check what changed
+    const oldInitiative = appState.initiatives.find(i => i.id === editingId);
+    
     const saved = await saveInitiativeToDB(editingCopy);
     
     const idx = appState.initiatives.findIndex(i => i.id === editingId);
@@ -2682,6 +2685,36 @@ const loadState = async () => {
       appState.initiatives[idx] = saved;
     } else {
       appState.initiatives.push(saved);
+    }
+    
+    // Log activity based on what changed
+    try {
+      if (oldInitiative && oldInitiative.status !== 'completed' && editingCopy.status === 'completed') {
+        // Initiative was just marked as completed
+        await saveActivityToDB({
+          type: 'completed',
+          icon: '✓',
+          text: `${editingCopy.name} marked as completed`,
+          meta: `${editingCopy.owner} • ${getRelativeTime(new Date())}`,
+          timestamp: new Date().toISOString(),
+          initiativeId: editingCopy.id,
+          initiativeName: editingCopy.name
+        });
+      } else if (oldInitiative) {
+        // Initiative was updated
+        await saveActivityToDB({
+          type: 'updated',
+          icon: '📝',
+          text: `Updated ${editingCopy.name}`,
+          meta: `${editingCopy.owner} • ${getRelativeTime(new Date())}`,
+          timestamp: new Date().toISOString(),
+          initiativeId: editingCopy.id,
+          initiativeName: editingCopy.name
+        });
+      }
+    } catch (activityError) {
+      console.error('Failed to log activity:', activityError);
+      // Don't fail the save if activity logging fails
     }
     
     render();
@@ -3775,6 +3808,17 @@ const loadState = async () => {
                 
                 initiative.notes.push(note);
                 noteInput.value = '';
+                
+                // Log activity for note added
+                saveActivityToDB({
+                    type: 'note_added',
+                    icon: '💬',
+                    text: `Added note to ${initiative.name}`,
+                    meta: `${note.author} • ${getRelativeTime(new Date())}`,
+                    timestamp: new Date().toISOString(),
+                    initiativeId: initiative.id,
+                    initiativeName: initiative.name
+                }).catch(err => console.error('Failed to log note activity:', err));
                 
                 renderNotes();
                 saveContext(); // Auto-save
