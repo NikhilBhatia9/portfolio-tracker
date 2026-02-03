@@ -110,6 +110,7 @@
         }
 
         .app-title h1 {
+            color: #667eea; /* Fallback color for browsers that don't support background-clip */
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -1218,7 +1219,7 @@
     <div class="app-shell">
         <nav class="top-nav">
             <div class="app-title">
-                <div class="app-title-icon">📊</div>
+                <div class="app-title-icon" role="img" aria-label="Portfolio dashboard icon">📊</div>
                 <div class="app-title-text">
                     <h1>Portfolio Tracker</h1>
                     <div class="subtitle">Platform Development & Integration</div>
