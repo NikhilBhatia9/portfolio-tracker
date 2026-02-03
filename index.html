@@ -1899,28 +1899,21 @@ async function getAllInitiativesFromSupabase() {
     
     if (error) throw error;
     
-    // Transform database format to app format and fetch notes for each initiative
-    // TODO: Optimize to avoid N+1 queries by batching note fetches
-    const initiatives = await Promise.all(data.map(async (item) => {
-        const notes = await getNotesFromSupabase(item.id);
-        return {
-            id: item.id,
-            name: item.name,
-            owner: item.owner,
-            status: item.status,
-            startDate: item.start_date,
-            targetDate: item.target_date,
-            categories: item.categories || [],
-            tags: item.tags || [],
-            phases: item.phases || [],
-            notes: notes || [],
-            keyInitiative: item.key_initiative || 'No',
-            created_at: item.created_at,
-            updated_at: item.updated_at
-        };
+    // Transform database format to app format
+    return data.map(item => ({
+        id: item.id,
+        name: item.name,
+        owner: item.owner,
+        status: item.status,
+        startDate: item.start_date,
+        targetDate: item.target_date,
+        categories: item.categories || [],
+        tags: item.tags || [],
+        phases: item.phases || [],
+        keyInitiative: item.key_initiative || 'No',
+        created_at: item.created_at,
+        updated_at: item.updated_at
     }));
-    
-    return initiatives;
 }
 
 /**
@@ -1946,9 +1939,6 @@ async function getInitiativeFromSupabase(id) {
         throw error;
     }
     
-    // Fetch notes from separate notes table
-    const notes = await getNotesFromSupabase(data.id);
-    
     // Transform database format to app format
     return {
         id: data.id,
@@ -1960,7 +1950,6 @@ async function getInitiativeFromSupabase(id) {
         categories: data.categories || [],
         tags: data.tags || [],
         phases: data.phases || [],
-        notes: notes || [],
         keyInitiative: data.key_initiative || 'No',
         created_at: data.created_at,
         updated_at: data.updated_at
@@ -1991,11 +1980,6 @@ async function saveInitiativeToSupabase(initiative) {
     
     if (error) throw error;
     
-    // Save notes to separate notes table
-    if (initiative.notes && initiative.notes.length > 0) {
-        await saveNotesToSupabase(initiative.id, initiative.notes);
-    }
-    
     console.log('💾 Saved to Supabase:', initiative.id, initiative.name);
     return initiative;
 }
@@ -2008,65 +1992,6 @@ async function deleteInitiativeFromSupabase(id) {
         .eq('id', id);
     
     if (error) throw error;
-    
-    // Also delete associated notes
-    await deleteNotesForInitiative(id);
-}
-
-// Supabase: Save notes for an initiative
-async function saveNotesToSupabase(initiativeId, notes) {
-    if (!notes || notes.length === 0) return;
-    
-    // Delete existing notes for this initiative first
-    await deleteNotesForInitiative(initiativeId);
-    
-    // Insert all notes
-    const notesData = notes.map(note => ({
-        id: note.id,
-        initiative_id: initiativeId,
-        text: note.text,
-        author: note.author,
-        created_at: note.date
-    }));
-    
-    const { error } = await supabaseClient
-        .from('notes')
-        .insert(notesData);
-    
-    if (error) throw error;
-}
-
-// Supabase: Get notes for an initiative
-async function getNotesFromSupabase(initiativeId) {
-    const { data, error } = await supabaseClient
-        .from('notes')
-        .select('*')
-        .eq('initiative_id', initiativeId)
-        .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Transform to app format
-    return data.map(note => ({
-        id: note.id,
-        text: note.text,
-        author: note.author,
-        date: note.created_at
-    }));
-}
-
-// Supabase: Delete notes for an initiative
-async function deleteNotesForInitiative(initiativeId) {
-    const { error } = await supabaseClient
-        .from('notes')
-        .delete()
-        .eq('initiative_id', initiativeId);
-    
-    // Ignore error if table doesn't exist or no notes found
-    // PGRST116 = PostgREST error code for "no rows found"
-    if (error && error.code !== 'PGRST116') {
-        console.warn('Failed to delete notes:', error);
-    }
 }
 
 // Supabase: Get all snapshots
@@ -2719,7 +2644,7 @@ const loadState = async () => {
             function seedData() {
                 appState.initiatives = [
                     {
-                        id: 1, name: 'Q1 Core Platform Migration', owner: 'Alice DB', status: 'active',
+                        id: '1', name: 'Q1 Core Platform Migration', owner: 'Alice DB', status: 'active',
                         startDate: new Date(Date.now() - 864e5 * 10).toISOString(),
                         targetDate: new Date(Date.now() + 864e5 * 45).toISOString(),
                         categories: ['Platform Development'],
@@ -2729,23 +2654,21 @@ const loadState = async () => {
                             { id: 'p3', name: 'QA', color: '#ec4899', startDate: new Date(Date.now() + 864e5 * 31).toISOString(), endDate: new Date(Date.now() + 864e5 * 45).toISOString(), status: 'pending' }
                         ]
                     },
-                    { id: 2, name: 'Mobile App Refactor', owner: 'Bob Mobile', status: 'risk', categories: ['Platform Development', 'Mobile'], startDate: new Date(Date.now() - 864e5 * 20).toISOString(), targetDate: new Date(Date.now() + 864e5 * 5).toISOString(), phases: [] },
-                    { id: 3, name: 'Design System 2.0', owner: 'Carol UI', status: 'planned', categories: ['Enterprise Integration'], startDate: new Date(Date.now() + 864e5 * 5).toISOString(), targetDate: new Date(Date.now() + 864e5 * 60).toISOString(), phases: [] },
-                    { id: 4, name: 'Legacy API Shutdown', owner: 'Dave Ops', status: 'completed', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 40).toISOString(), targetDate: new Date(Date.now() - 864e5 * 10).toISOString(), phases: [] },
-                    { id: 5, name: 'Customer Portal V3', owner: 'Sarah N.', status: 'active', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 15).toISOString(), targetDate: new Date(Date.now() + 864e5 * 30).toISOString(), phases: [] },
-                    { id: 6, name: 'Analytics Dashboard', owner: 'Mike Data', status: 'risk', categories: ['Platform Development'], startDate: new Date(Date.now() - 864e5 * 25).toISOString(), targetDate: new Date(Date.now() - 864e5 * 2).toISOString(), phases: [] },
-                    { id: 7, name: 'Onboarding Flow Optimization', owner: 'Jessica P.', status: 'completed', startDate: new Date(Date.now() - 864e5 * 50).toISOString(), targetDate: new Date(Date.now() - 864e5 * 15).toISOString(), phases: [] },
-                    { id: 8, name: 'AI Recommendation Engine', owner: 'Tom AI', status: 'planned', categories: ['Platform Development'], startDate: new Date(Date.now() + 864e5 * 10).toISOString(), targetDate: new Date(Date.now() + 864e5 * 90).toISOString(), phases: [] }
+                    { id: '2', name: 'Mobile App Refactor', owner: 'Bob Mobile', status: 'risk', categories: ['Platform Development', 'Mobile'], startDate: new Date(Date.now() - 864e5 * 20).toISOString(), targetDate: new Date(Date.now() + 864e5 * 5).toISOString(), phases: [] },
+                    { id: '3', name: 'Design System 2.0', owner: 'Carol UI', status: 'planned', categories: ['Enterprise Integration'], startDate: new Date(Date.now() + 864e5 * 5).toISOString(), targetDate: new Date(Date.now() + 864e5 * 60).toISOString(), phases: [] },
+                    { id: '4', name: 'Legacy API Shutdown', owner: 'Dave Ops', status: 'completed', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 40).toISOString(), targetDate: new Date(Date.now() - 864e5 * 10).toISOString(), phases: [] },
+                    { id: '5', name: 'Customer Portal V3', owner: 'Sarah N.', status: 'active', categories: ['Enterprise Integration'], startDate: new Date(Date.now() - 864e5 * 15).toISOString(), targetDate: new Date(Date.now() + 864e5 * 30).toISOString(), phases: [] },
+                    { id: '6', name: 'Analytics Dashboard', owner: 'Mike Data', status: 'risk', categories: ['Platform Development'], startDate: new Date(Date.now() - 864e5 * 25).toISOString(), targetDate: new Date(Date.now() - 864e5 * 2).toISOString(), phases: [] },
+                    { id: '7', name: 'Onboarding Flow Optimization', owner: 'Jessica P.', status: 'completed', startDate: new Date(Date.now() - 864e5 * 50).toISOString(), targetDate: new Date(Date.now() - 864e5 * 15).toISOString(), phases: [] },
+                    { id: '8', name: 'AI Recommendation Engine', owner: 'Tom AI', status: 'planned', categories: ['Platform Development'], startDate: new Date(Date.now() + 864e5 * 10).toISOString(), targetDate: new Date(Date.now() + 864e5 * 90).toISOString(), phases: [] }
                 ];
                 saveState();
             }
 
             // --- MODAL & PHASES ---
             function openModal(id) {
-                // Convert id to number if it's a string representation of a number
-                const numericId = typeof id === 'string' && !isNaN(id) ? parseInt(id, 10) : id;
-                editingId = numericId;
-                const note = appState.initiatives.find(i => i.id === numericId);
+                editingId = id;
+                const note = appState.initiatives.find(i => i.id === id);
                 if (!note) return;
                 editingCopy = JSON.parse(JSON.stringify(note));
 
@@ -4152,11 +4075,6 @@ const loadState = async () => {
                     initiative.notes = [];
                 }
                 
-                // Also ensure editingCopy has notes array
-                if (!editingCopy.notes) {
-                    editingCopy.notes = [];
-                }
-                
                 const note = {
                     id: Date.now(),
                     text: noteText,
@@ -4165,8 +4083,6 @@ const loadState = async () => {
                 };
                 
                 initiative.notes.push(note);
-                // Also add to editingCopy so it gets saved to DB
-                editingCopy.notes.push(note);
                 noteInput.value = '';
                 
                 // Log activity for note added
@@ -4810,7 +4726,7 @@ const loadState = async () => {
             }
 
             return {
-                id: parseInt(issue.id, 10),
+                id: issue.key,
                 name: f.summary,
                 owner: f.assignee ? f.assignee.displayName : 'Unassigned',
                 keyInitiative: keyInitiativeVal,
