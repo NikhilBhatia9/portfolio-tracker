@@ -2,3 +2,6 @@ node_modules/
 npm-debug.log
 .env
 .DS_Store
+
+# Configuration with credentials (use config.example.js as template)
+# js/modules/config.js with real credentials should not be committed
