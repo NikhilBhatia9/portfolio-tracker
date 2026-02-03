@@ -1040,6 +1040,51 @@
             color: var(--success-color);
         }
         
+        /* Pagination Controls */
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+        }
+        
+        .pagination-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-accent);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .pagination-btn:hover:not(:disabled) {
+            background: var(--bg-primary);
+            border-color: var(--purple);
+            color: var(--purple);
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .pagination-btn.active {
+            background: var(--purple);
+            color: white;
+            border-color: var(--purple);
+        }
+        
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            padding: 0 1rem;
+        }
+        
         /* Sidebar Components */
         .dashboard-sidebar {
             display: flex;
@@ -1310,6 +1355,10 @@
                         </div>
                         <div class="initiative-list" id="initiative-list">
                             <!-- Initiative items populated by JavaScript -->
+                        </div>
+                        <!-- Pagination Controls -->
+                        <div class="pagination-controls" id="initiatives-pagination">
+                            <!-- Pagination buttons populated by JavaScript -->
                         </div>
                     </div>
 
@@ -2260,7 +2309,10 @@ function getRandomModernColor() {
                     owner: '',
                     status: [],
                     targetDate: ''
-                }
+                },
+                // Pagination state for initiatives list
+                initiativesPage: 1,
+                initiativesPerPage: 10
             };
             let editingId = null;
             let editingCopy = null;
@@ -2874,11 +2926,13 @@ const loadState = async () => {
 
             function setFilter(status) {
                 appState.filterStatus = status;
+                appState.initiativesPage = 1; // Reset to first page when filter changes
                 render();
             }
 
             function setCategoryFilter(category) {
                 appState.filterCategory = category;
+                appState.initiativesPage = 1; // Reset to first page when filter changes
                 render();
                 // Also re-render the initiatives list with current status filter
                 const activeTab = document.querySelector('.filter-tab.active');
@@ -3134,10 +3188,27 @@ const loadState = async () => {
                 
                 if (filtered.length === 0) {
                     container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted)">No initiatives found</div>';
+                    document.getElementById('initiatives-pagination').innerHTML = '';
                     return;
                 }
                 
-                container.innerHTML = filtered.slice(0, 10).map(i => {
+                // Calculate pagination
+                const totalItems = filtered.length;
+                const totalPages = Math.ceil(totalItems / appState.initiativesPerPage);
+                
+                // Ensure current page is valid
+                if (appState.initiativesPage > totalPages && totalPages > 0) {
+                    appState.initiativesPage = 1;
+                }
+                
+                const currentPage = appState.initiativesPage;
+                
+                // Get items for current page
+                const startIndex = (currentPage - 1) * appState.initiativesPerPage;
+                const endIndex = startIndex + appState.initiativesPerPage;
+                const paginatedItems = filtered.slice(startIndex, endIndex);
+                
+                container.innerHTML = paginatedItems.map(i => {
                     const targetDate = new Date(i.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                     const isKey = i.keyInitiative === 'Yes';
                     
@@ -3165,6 +3236,77 @@ const loadState = async () => {
                         </div>
                     `;
                 }).join('');
+                
+                // Render pagination controls
+                renderPaginationControls(totalItems, totalPages, filter);
+            }
+            
+            // Render Pagination Controls
+            function renderPaginationControls(totalItems, totalPages, filter) {
+                const container = document.getElementById('initiatives-pagination');
+                
+                if (totalPages <= 1) {
+                    container.innerHTML = '';
+                    return;
+                }
+                
+                // Sanitize filter to prevent XSS - only allow known filter values
+                const validFilters = ['all', 'active', 'planned', 'risk', 'completed'];
+                const safeFilter = validFilters.includes(filter) ? filter : 'all';
+                
+                const currentPage = appState.initiativesPage;
+                const startItem = (currentPage - 1) * appState.initiativesPerPage + 1;
+                const endItem = Math.min(currentPage * appState.initiativesPerPage, totalItems);
+                
+                let html = '';
+                
+                // Previous button
+                html += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1}, '${safeFilter}')" ${currentPage === 1 ? 'disabled' : ''}>← Previous</button>`;
+                
+                // Page numbers
+                const maxPageButtons = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+                let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+                
+                // Adjust startPage if we're near the end
+                if (endPage - startPage < maxPageButtons - 1) {
+                    startPage = Math.max(1, endPage - maxPageButtons + 1);
+                }
+                
+                // First page
+                if (startPage > 1) {
+                    html += `<button class="pagination-btn" onclick="goToPage(1, '${safeFilter}')">1</button>`;
+                    if (startPage > 2) {
+                        html += `<span class="pagination-info">...</span>`;
+                    }
+                }
+                
+                // Page number buttons
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i}, '${safeFilter}')">${i}</button>`;
+                }
+                
+                // Last page
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        html += `<span class="pagination-info">...</span>`;
+                    }
+                    html += `<button class="pagination-btn" onclick="goToPage(${totalPages}, '${safeFilter}')">${totalPages}</button>`;
+                }
+                
+                // Next button
+                html += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1}, '${safeFilter}')" ${currentPage === totalPages ? 'disabled' : ''}>Next →</button>`;
+                
+                // Info text
+                html += `<span class="pagination-info">Showing ${startItem}-${endItem} of ${totalItems}</span>`;
+                
+                container.innerHTML = html;
+            }
+            
+            // Go to specific page
+            function goToPage(page, filter) {
+                appState.initiativesPage = page;
+                renderInitiativesList(filter);
             }
             
             // Render Upcoming Milestones
@@ -3331,6 +3473,8 @@ const loadState = async () => {
                     tab.classList.toggle('active', isActive);
                 });
                 
+                // Reset to first page when filter changes
+                appState.initiativesPage = 1;
                 renderInitiativesList(filter);
             }
             
