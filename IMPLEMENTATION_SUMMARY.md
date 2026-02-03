@@ -135,7 +135,8 @@ JIRA Data + Existing Data → [Intelligent Merge] → Supabase
 | Field | Strategy | Source |
 |-------|----------|--------|
 | id, name, owner, status | **Update** | JIRA (source of truth) |
-| startDate, targetDate, keyInitiative | **Update** | JIRA (source of truth) |
+| keyInitiative | **Update** | JIRA (source of truth) |
+| startDate, targetDate | **Preserve** | User modifications (fallback to JIRA for new initiatives) |
 | phases | **Preserve** | User modifications |
 | tags | **Preserve** | User modifications |
 | categories | **Merge + Deduplicate** | Both JIRA + User |

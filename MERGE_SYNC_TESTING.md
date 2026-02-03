@@ -10,8 +10,8 @@ Previously, syncing from JIRA would **overwrite** all initiative data, wiping ou
 - Manually added categories
 
 Now, the sync **merges** JIRA data with existing data:
-- ✅ Preserves: phases, tags, manually added categories
-- ✅ Updates from JIRA: name, owner, status, dates, keyInitiative
+- ✅ Preserves: phases, tags, manually added categories, manually edited dates (startDate, targetDate)
+- ✅ Updates from JIRA: name, owner, status, keyInitiative
 - ✅ Merges categories: combines JIRA categories with existing ones (no duplicates)
 
 ## Prerequisites
@@ -98,29 +98,56 @@ Now, the sync **merges** JIRA data with existing data:
 ---
 
 ### Scenario 5: Updated JIRA Fields
-**Objective:** Verify JIRA fields are updated correctly
+**Objective:** Verify JIRA fields are updated correctly and dates are preserved
 
 **Steps:**
 1. Perform initial JIRA sync for an initiative
-2. In JIRA, change the initiative:
+2. In the portfolio tracker, manually edit the initiative:
+   - Change start date (e.g., from auto-generated to a specific date)
+   - Change target date (e.g., to extend the timeline)
+3. In JIRA, change the initiative:
    - Update status (e.g., from "In Progress" to "Done")
    - Change assignee
    - Modify due date
-3. Add a phase and tag in the portfolio tracker
-4. Perform JIRA sync again
-5. Check the initiative
+4. Add a phase and tag in the portfolio tracker
+5. Perform JIRA sync again
+6. Check the initiative
 
 **Expected Result:**
 - Status updated from JIRA ✅
 - Owner updated from JIRA ✅
-- Due date updated from JIRA ✅
+- Start date preserved from manual edit (NOT updated from JIRA) ✅
+- Target date preserved from manual edit (NOT updated from JIRA due date) ✅
 - Phase preserved ✅
 - Tag preserved ✅
 - Console shows merge operation with all details
 
 ---
 
-### Scenario 6: Multiple Syncs
+### Scenario 6: Preserve Manually Edited Dates on Sync
+**Objective:** Verify user-edited start and target dates are preserved during sync
+
+**Steps:**
+1. Perform initial JIRA sync to import initiatives
+2. Select an initiative and edit its dates:
+   - Click the initiative card to open details
+   - Change start date to a specific date (e.g., "2026-03-01")
+   - Change target date to a specific date (e.g., "2026-06-30")
+   - Save the changes
+3. Verify dates are saved in the database
+4. Perform JIRA sync again
+5. Open the same initiative
+
+**Expected Result:**
+- Start date remains "2026-03-01" (preserved from manual edit)
+- Target date remains "2026-06-30" (preserved from manual edit)
+- Other JIRA fields (name, owner, status) may update as expected
+- Console shows: `🔄 Merging initiative: [ISSUE-KEY]`
+- No date overwriting from JIRA
+
+---
+
+### Scenario 7: Multiple Syncs
 **Objective:** Verify data integrity across multiple syncs
 
 **Steps:**
