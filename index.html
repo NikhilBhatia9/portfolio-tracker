@@ -805,7 +805,7 @@
             background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
         }
         
-        /* Design 1: Active Initiatives & Content Grid */
+        /* Design 1: Initiatives & Content Grid */
         .dashboard-content-grid {
             display: grid;
             grid-template-columns: 2fr 1fr;
@@ -914,7 +914,7 @@
             display: flex;
             gap: 1rem;
             font-size: 0.875rem;
-            color: var(--text-secondary);
+            color: var(--text-primary);
             flex-wrap: wrap;
         }
         
@@ -1202,39 +1202,12 @@
                     </div>
                 </div>
 
-                <div class="card" style="margin-top: 2rem;">
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                        <h2>Initiative Status</h2>
-                        <div style="color: var(--text-muted); font-size: 0.9rem;">Click a row to edit details</div>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th class="sortable" id="header-id" onclick="sortBy('id')">Key</th>
-                                <th class="sortable" id="header-name" onclick="sortBy('name')">Name</th>
-                                <th class="sortable" id="header-owner" onclick="sortBy('owner')">Owner</th>
-                                <th class="sortable" id="header-keyInitiative" onclick="sortBy('keyInitiative')">Key
-                                    Initiative</th>
-                                <th class="sortable" id="header-targetDate" onclick="sortBy('targetDate')">Target Date
-                                </th>
-                                <th class="sortable" id="header-status" onclick="sortBy('status')">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body"></tbody>
-                    </table>
-                    <div style="margin-top: 1rem; text-align: center;">
-                        <button class="btn btn-primary hidden" onclick="seedData()" id="btn-seed">Seed Demo
-                            Data</button>
-                    </div>
-                </div>
-
-                <!-- Design 1: Active Initiatives and Sidebar -->
+                <!-- Design 1: Initiatives and Sidebar -->
                 <div class="dashboard-content-grid">
-                    <!-- Active Initiatives Card -->
+                    <!-- Initiatives Card -->
                     <div class="initiatives-card">
                         <div class="card-header">
-                            <h2 class="card-title">Active Initiatives</h2>
+                            <h2 class="card-title">Initiatives</h2>
                             <div class="filter-tabs">
                                 <button class="filter-tab active" onclick="filterInitiatives('all')">All</button>
                                 <button class="filter-tab" onclick="filterInitiatives('active')">Active</button>
@@ -2953,15 +2926,21 @@ const loadState = async () => {
                 });
 
                 const tbody = document.getElementById('table-body');
-                tbody.innerHTML = '';
-                if (filteredInitiatives.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">No ${appState.filterStatus === 'all' ? '' : appState.filterStatus} initiatives found.</td></tr>`;
-                    if (initiatives.length === 0) {
-                        document.getElementById('btn-seed').classList.remove('hidden');
-                    }
+                if (!tbody) {
+                    // Table was removed, skip table rendering
+                    console.log('Table body element not found, skipping table render');
                 } else {
-                    document.getElementById('btn-seed').classList.add('hidden');
-                }
+                    tbody.innerHTML = '';
+                    if (filteredInitiatives.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">No ${appState.filterStatus === 'all' ? '' : appState.filterStatus} initiatives found.</td></tr>`;
+                        if (initiatives.length === 0) {
+                            const btnSeed = document.getElementById('btn-seed');
+                            if (btnSeed) btnSeed.classList.remove('hidden');
+                        }
+                    } else {
+                        const btnSeed = document.getElementById('btn-seed');
+                        if (btnSeed) btnSeed.classList.add('hidden');
+                    }
 
                 filteredInitiatives.forEach(i => {
                     const tr = document.createElement('tr');
@@ -2990,6 +2969,7 @@ const loadState = async () => {
                     if (i.keyInitiative === 'Yes' || (i.keyInitiative && i.keyInitiative !== 'No')) tr.classList.add('key-initiative');
                     tbody.appendChild(tr);
                 });
+                } // End table rendering if check
 
                 // 3. Timeline (with its own filters)
                 const tl = appState.timelineFilters;
@@ -3025,7 +3005,7 @@ const loadState = async () => {
 
             // --- NEW DESIGN 1 FUNCTIONS ---
             
-            // Render Active Initiatives List
+            // Render Initiatives List
             function renderInitiativesList(filter = 'all') {
                 const initiatives = appState.initiatives;
                 const container = document.getElementById('initiative-list');
@@ -3058,7 +3038,7 @@ const loadState = async () => {
                     if (i.status === 'completed') badgeClass = 'badge-completed';
                     
                     return `
-                        <div class="initiative-item" onclick="openModal('${i.id}')">
+                        <div class="initiative-item">
                             <div class="initiative-checkbox"></div>
                             <div class="initiative-content">
                                 <div class="initiative-title">${i.name}</div>
@@ -3196,7 +3176,7 @@ const loadState = async () => {
                 return date.toLocaleDateString();
             }
             
-            // Filter initiatives in Active Initiatives card
+            // Filter initiatives in Initiatives card
             function filterInitiatives(filter) {
                 // Update active tab
                 document.querySelectorAll('.filter-tab').forEach(tab => {
