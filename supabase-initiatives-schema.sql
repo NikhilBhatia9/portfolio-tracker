@@ -11,7 +11,6 @@ CREATE TABLE IF NOT EXISTS initiatives (
     categories JSONB DEFAULT '[]'::jsonb,
     tags JSONB DEFAULT '[]'::jsonb,
     phases JSONB DEFAULT '[]'::jsonb,
-    notes JSONB DEFAULT '[]'::jsonb,
     key_initiative VARCHAR(10) DEFAULT 'No',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -23,8 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_initiatives_owner ON initiatives(owner);
 CREATE INDEX IF NOT EXISTS idx_initiatives_created_at ON initiatives(created_at DESC);
 
 -- Add comment to table
-COMMENT ON TABLE initiatives IS 'Stores portfolio initiatives with their details, phases, and notes';
-COMMENT ON COLUMN initiatives.notes IS 'Array of notes/comments with id, text, author, and date';
+COMMENT ON TABLE initiatives IS 'Stores portfolio initiatives with their details and phases';
 
 -- Enable Row Level Security (RLS) - adjust policies based on your authentication setup
 ALTER TABLE initiatives ENABLE ROW LEVEL SECURITY;
