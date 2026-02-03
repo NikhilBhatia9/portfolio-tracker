@@ -12,23 +12,28 @@
     <style>
         /* CSS Variables */
         :root {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
             --bg-card: #334155;
             --bg-hover: #475569;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --accent-color: #0ea5e9;
-            --accent-glow: rgba(14, 165, 233, 0.5);
-            --success-color: #22c55e;
-            --warning-color: #eab308;
+            --bg-accent: #f1f5f9;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --accent-color: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
             --danger-color: #ef4444;
             --risk-color: #f97316;
-            --border-color: #475569;
-            --radius-md: 8px;
+            --border-color: #e2e8f0;
+            --purple: #8b5cf6;
+            --radius-md: 12px;
             --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --font-family: 'Segoe UI', system-ui, sans-serif;
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             /* Timeline-specific variables */
             --timeline-lane-height: 24px;
             --timeline-bar-height: 20px;
@@ -37,7 +42,7 @@
         }
 
         body {
-            background-color: var(--bg-primary);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: var(--text-primary);
             font-family: var(--font-family);
             margin: 0;
@@ -54,7 +59,7 @@
 
         .sidebar {
             width: 100px;
-            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+            background: var(--bg-secondary);
             backdrop-filter: blur(10px);
             border-right: 1px solid var(--border-color);
             display: flex;
@@ -65,6 +70,7 @@
             top: 0;
             height: 100vh;
             z-index: 100;
+            box-shadow: var(--shadow-lg);
         }
 
         .nav-item {
@@ -83,12 +89,12 @@
 
         .nav-item:hover {
             color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(59, 130, 246, 0.1);
         }
 
         .nav-item.active {
             color: var(--accent-color);
-            background: rgba(14, 165, 233, 0.1);
+            background: rgba(59, 130, 246, 0.15);
             border-left-color: var(--accent-color);
         }
 
@@ -155,42 +161,77 @@
         .card {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 1.5rem;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            box-shadow: 0 25px 30px -5px rgb(0 0 0 / 0.15);
         }
 
         /* Dashboard Grid */
         .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--card-accent, var(--accent-color)), transparent);
         }
 
         .metric-card h3 {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         .metric-card .value {
             font-size: 2.5rem;
-            font-weight: bold;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
         }
 
         .metric-card.clickable {
             cursor: pointer;
-            transition: transform 0.2s, background-color 0.2s, border-color 0.2s;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .metric-card.clickable:hover {
-            transform: translateY(-2px);
-            background-color: rgba(255, 255, 255, 0.05);
+            transform: translateY(-4px);
+            box-shadow: 0 25px 30px -5px rgb(0 0 0 / 0.2);
         }
 
         .metric-card.active {
-            background-color: rgba(14, 165, 233, 0.1);
+            background-color: rgba(59, 130, 246, 0.05);
             border-color: var(--accent-color);
+            border-width: 2px;
         }
+        
+        /* Individual stat card colors */
+        #filter-all { --card-accent: var(--accent-color); }
+        #filter-completed { --card-accent: var(--success-color); }
+        #filter-active { --card-accent: var(--purple); }
+        #filter-planned { --card-accent: var(--text-secondary); }
+        #filter-risk { --card-accent: var(--risk-color); }
 
         /* Table */
         table {
@@ -763,6 +804,313 @@
         .production-banner.error {
             background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
         }
+        
+        /* Design 1: Active Initiatives & Content Grid */
+        .dashboard-content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .initiatives-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-accent);
+            padding: 0.25rem;
+            border-radius: 10px;
+        }
+        
+        .filter-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+        }
+        
+        .filter-tab:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .filter-tab.active {
+            background: var(--bg-secondary);
+            color: var(--accent-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        /* Initiative Items */
+        .initiative-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .initiative-item {
+            background: var(--bg-accent);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .initiative-item:hover {
+            background: var(--bg-primary);
+            transform: translateX(4px);
+        }
+        
+        .initiative-checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .initiative-checkbox:hover {
+            border-color: var(--accent-color);
+        }
+        
+        .initiative-content {
+            flex: 1;
+        }
+        
+        .initiative-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .initiative-meta {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            flex-wrap: wrap;
+        }
+        
+        .initiative-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        .initiative-badge {
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        
+        .badge-active {
+            background: rgba(139, 92, 246, 0.1);
+            color: var(--purple);
+        }
+        
+        .badge-planned {
+            background: rgba(148, 163, 184, 0.1);
+            color: var(--text-secondary);
+        }
+        
+        .badge-risk {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .badge-completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success-color);
+        }
+        
+        /* Sidebar Components */
+        .dashboard-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .sidebar-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .sidebar-title {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1.25rem;
+        }
+        
+        /* Upcoming Milestones */
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .timeline-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .timeline-date {
+            flex-shrink: 0;
+            width: 50px;
+            font-weight: 700;
+            color: var(--accent-color);
+            font-size: 0.875rem;
+        }
+        
+        .timeline-content {
+            flex: 1;
+        }
+        
+        .timeline-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            font-size: 0.9375rem;
+        }
+        
+        .timeline-detail {
+            font-size: 0.8125rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Recent Activity Feed */
+        .activity-feed {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .activity-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+        }
+        
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--bg-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        
+        .activity-content {
+            flex: 1;
+        }
+        
+        .activity-text {
+            font-size: 0.875rem;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+        
+        .activity-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Notes Section for At Risk Initiatives */
+        .notes-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .notes-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .notes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+        
+        .note-item {
+            background: var(--bg-accent);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--risk-color);
+        }
+        
+        .note-text {
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.9375rem;
+        }
+        
+        .note-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .note-input-container {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .note-input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+        
+        .note-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
     </style>
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -878,6 +1226,44 @@
                     <div style="margin-top: 1rem; text-align: center;">
                         <button class="btn btn-primary hidden" onclick="seedData()" id="btn-seed">Seed Demo
                             Data</button>
+                    </div>
+                </div>
+
+                <!-- Design 1: Active Initiatives and Sidebar -->
+                <div class="dashboard-content-grid">
+                    <!-- Active Initiatives Card -->
+                    <div class="initiatives-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Active Initiatives</h2>
+                            <div class="filter-tabs">
+                                <button class="filter-tab active" onclick="filterInitiatives('all')">All</button>
+                                <button class="filter-tab" onclick="filterInitiatives('active')">Active</button>
+                                <button class="filter-tab" onclick="filterInitiatives('planned')">Planned</button>
+                                <button class="filter-tab" onclick="filterInitiatives('risk')">At Risk</button>
+                            </div>
+                        </div>
+                        <div class="initiative-list" id="initiative-list">
+                            <!-- Initiative items populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Sidebar with Upcoming Milestones and Recent Activity -->
+                    <div class="dashboard-sidebar">
+                        <!-- Upcoming Milestones -->
+                        <div class="sidebar-card">
+                            <h3 class="sidebar-title">Upcoming Milestones</h3>
+                            <div id="upcoming-milestones">
+                                <!-- Milestones populated by JavaScript -->
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity (from Design 3) -->
+                        <div class="sidebar-card">
+                            <h3 class="sidebar-title">Recent Activity</h3>
+                            <div class="activity-feed" id="recent-activity">
+                                <!-- Activity items populated by JavaScript -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1076,6 +1462,22 @@
                             </div>
                             <div class="multi-select-dropdown hidden" id="tags-dropdown"></div>
                         </div>
+                    </div>
+                </div>
+
+                <hr style="border-color: var(--border-color); width: 100%;">
+
+                <!-- Notes Section for At Risk Initiatives -->
+                <div id="notes-section" class="notes-section" style="display: none;">
+                    <div class="notes-header">
+                        <h3>Notes & Comments</h3>
+                    </div>
+                    <div class="notes-list" id="notes-list">
+                        <!-- Notes will be populated by JavaScript -->
+                    </div>
+                    <div class="note-input-container">
+                        <input type="text" id="note-input" class="note-input" placeholder="Add a note or comment...">
+                        <button class="btn btn-primary" onclick="addNote()">Add Note</button>
                     </div>
                 </div>
 
@@ -1897,6 +2299,7 @@ const loadState = async () => {
                 initializeMultiSelect('tags', editingCopy.tags || []);
 
                 renderPhases();
+                renderNotes(); // Render notes section
 
                 document.getElementById('modal-wrapper').classList.remove('hidden');
             }
@@ -1938,6 +2341,7 @@ const loadState = async () => {
   editingCopy.status = document.getElementById('edit-status').value;
   editingCopy.categories = getMultiSelectValues('categories');
   editingCopy.tags = getMultiSelectValues('tags');
+  editingCopy.updatedDate = new Date(); // Track last update for activity feed
   
   // Validate all phases
   if (editingCopy.phases && editingCopy.phases.length > 0) {
@@ -2612,6 +3016,268 @@ const loadState = async () => {
                     btn.onclick = () => viewSnapshot(s.id);
                     snapList.appendChild(btn);
                 });
+                
+                // 5. Render Design 1 Components
+                renderInitiativesList('all');
+                renderUpcomingMilestones();
+                renderRecentActivity();
+            }
+
+            // --- NEW DESIGN 1 FUNCTIONS ---
+            
+            // Render Active Initiatives List
+            function renderInitiativesList(filter = 'all') {
+                const initiatives = appState.initiatives;
+                const container = document.getElementById('initiative-list');
+                
+                let filtered = initiatives;
+                if (filter !== 'all') {
+                    if (filter === 'active') {
+                        // Active filter includes both active and risk status
+                        filtered = initiatives.filter(i => i.status === 'active' || i.status === 'risk');
+                    } else {
+                        filtered = initiatives.filter(i => i.status === filter);
+                    }
+                }
+                
+                // Sort by target date (upcoming first)
+                filtered.sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate));
+                
+                if (filtered.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted)">No initiatives found</div>';
+                    return;
+                }
+                
+                container.innerHTML = filtered.slice(0, 10).map(i => {
+                    const targetDate = new Date(i.targetDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    const isKey = i.keyInitiative === 'Yes';
+                    
+                    let badgeClass = 'badge-active';
+                    if (i.status === 'planned') badgeClass = 'badge-planned';
+                    if (i.status === 'risk') badgeClass = 'badge-risk';
+                    if (i.status === 'completed') badgeClass = 'badge-completed';
+                    
+                    return `
+                        <div class="initiative-item" onclick="openModal('${i.id}')">
+                            <div class="initiative-checkbox"></div>
+                            <div class="initiative-content">
+                                <div class="initiative-title">${i.name}</div>
+                                <div class="initiative-meta">
+                                    <span>👤 ${i.owner}</span>
+                                    <span>📅 Due ${targetDate}</span>
+                                    ${isKey ? '<span>🔑 Key Initiative</span>' : ''}
+                                </div>
+                            </div>
+                            <span class="initiative-badge ${badgeClass}">${i.status.charAt(0).toUpperCase() + i.status.slice(1)}</span>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Render Upcoming Milestones
+            function renderUpcomingMilestones() {
+                const initiatives = appState.initiatives;
+                const container = document.getElementById('upcoming-milestones');
+                
+                // Get upcoming initiatives sorted by target date
+                const upcoming = initiatives
+                    .filter(i => i.status !== 'completed')
+                    .sort((a, b) => new Date(a.targetDate) - new Date(b.targetDate))
+                    .slice(0, 5);
+                
+                if (upcoming.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.875rem">No upcoming milestones</div>';
+                    return;
+                }
+                
+                container.innerHTML = upcoming.map(i => {
+                    const date = new Date(i.targetDate);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    
+                    let detail = i.status === 'risk' ? 'At Risk' : 
+                                i.status === 'active' ? 'In Progress' : 
+                                'Planned';
+                    
+                    return `
+                        <div class="timeline-item" onclick="openModal('${i.id}')" style="cursor:pointer;">
+                            <div class="timeline-date">${dateStr}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-title">${i.name}</div>
+                                <div class="timeline-detail">${detail}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+            
+            // Render Recent Activity
+            function renderRecentActivity() {
+                const container = document.getElementById('recent-activity');
+                
+                // Get recent changes from initiatives
+                const activities = [];
+                const now = Date.now();
+                
+                appState.initiatives.forEach(i => {
+                    const createdDate = i.createdDate ? new Date(i.createdDate) : null;
+                    const updatedDate = i.updatedDate ? new Date(i.updatedDate) : null;
+                    
+                    if (i.status === 'completed' && updatedDate && (now - updatedDate) < 7 * 24 * 60 * 60 * 1000) {
+                        activities.push({
+                            icon: '✓',
+                            text: `${i.name} marked as completed`,
+                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
+                            date: updatedDate
+                        });
+                    } else if (updatedDate && (now - updatedDate) < 3 * 24 * 60 * 60 * 1000) {
+                        activities.push({
+                            icon: '📝',
+                            text: `Updated ${i.name}`,
+                            meta: `${i.owner} • ${getRelativeTime(updatedDate)}`,
+                            date: updatedDate
+                        });
+                    }
+                    
+                    // Check for notes added recently
+                    if (i.notes && i.notes.length > 0) {
+                        const recentNotes = i.notes.filter(n => {
+                            const noteDate = new Date(n.date);
+                            return (now - noteDate) < 7 * 24 * 60 * 60 * 1000;
+                        });
+                        recentNotes.forEach(n => {
+                            activities.push({
+                                icon: '💬',
+                                text: `Added note to ${i.name}`,
+                                meta: `${n.author} • ${getRelativeTime(new Date(n.date))}`,
+                                date: new Date(n.date)
+                            });
+                        });
+                    }
+                });
+                
+                // Sort by date (most recent first)
+                activities.sort((a, b) => b.date - a.date);
+                
+                if (activities.length === 0) {
+                    container.innerHTML = `
+                        <div class="activity-item">
+                            <div class="activity-icon">📊</div>
+                            <div class="activity-content">
+                                <div class="activity-text">Portfolio tracker initialized</div>
+                                <div class="activity-meta">System • Today</div>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = activities.slice(0, 6).map(a => `
+                    <div class="activity-item">
+                        <div class="activity-icon">${a.icon}</div>
+                        <div class="activity-content">
+                            <div class="activity-text">${a.text}</div>
+                            <div class="activity-meta">${a.meta}</div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            // Helper function for relative time
+            function getRelativeTime(date) {
+                const now = Date.now();
+                const diff = now - date;
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                
+                if (hours < 1) return 'Just now';
+                if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+                if (days === 1) return '1 day ago';
+                if (days < 7) return `${days} days ago`;
+                return date.toLocaleDateString();
+            }
+            
+            // Filter initiatives in Active Initiatives card
+            function filterInitiatives(filter) {
+                // Update active tab
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    const tabText = tab.textContent.trim().toLowerCase();
+                    const isActive = tabText === filter || 
+                        (filter === 'all' && tab.textContent.trim() === 'All') ||
+                        (filter === 'risk' && tabText === 'at risk');
+                    tab.classList.toggle('active', isActive);
+                });
+                
+                renderInitiativesList(filter);
+            }
+            
+            // Add Note function
+            function addNote() {
+                if (!editingId) return;
+                
+                const noteInput = document.getElementById('note-input');
+                const noteText = noteInput.value.trim();
+                
+                if (!noteText) return;
+                
+                const initiative = appState.initiatives.find(i => i.id === editingId);
+                if (!initiative) return;
+                
+                if (!initiative.notes) {
+                    initiative.notes = [];
+                }
+                
+                const note = {
+                    id: Date.now(),
+                    text: noteText,
+                    author: initiative.owner || 'User',
+                    date: new Date().toISOString()
+                };
+                
+                initiative.notes.push(note);
+                noteInput.value = '';
+                
+                renderNotes();
+                saveContext(); // Auto-save
+            }
+            
+            // Render Notes in Modal
+            function renderNotes() {
+                if (!editingId) return;
+                
+                const initiative = appState.initiatives.find(i => i.id === editingId);
+                if (!initiative) return;
+                
+                const notesSection = document.getElementById('notes-section');
+                const notesList = document.getElementById('notes-list');
+                
+                // Show notes section only for at-risk initiatives
+                if (initiative.status === 'risk') {
+                    notesSection.style.display = 'block';
+                    
+                    if (!initiative.notes || initiative.notes.length === 0) {
+                        notesList.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.875rem">No notes yet</div>';
+                    } else {
+                        // Sort notes by date descending (newest first)
+                        const sortedNotes = initiative.notes.slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+                        notesList.innerHTML = sortedNotes.map(note => {
+                            const date = new Date(note.date).toLocaleDateString('en-US', { 
+                                month: 'short', 
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                            
+                            return `
+                                <div class="note-item">
+                                    <div class="note-text">${note.text}</div>
+                                    <div class="note-meta">${note.author} • ${date}</div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                } else {
+                    notesSection.style.display = 'none';
+                }
             }
 
             // --- DRAG HANDLERS ---
