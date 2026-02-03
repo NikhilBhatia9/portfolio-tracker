@@ -2485,6 +2485,9 @@ const loadState = async () => {
                 renderNotes(); // Render notes section
 
                 document.getElementById('modal-wrapper').classList.remove('hidden');
+                
+                // Setup date validation listeners
+                setupDateValidationListeners();
             }
 
             function closeModal() {
@@ -2556,6 +2559,43 @@ const loadState = async () => {
     alert('Failed to save: ' + error.message);
   }
 }
+
+            // --- DATE VALIDATION ON BLUR ---
+            function validateMainDatesOnBlur() {
+                const startInput = document.getElementById('edit-start');
+                const targetInput = document.getElementById('edit-target');
+                
+                if (!startInput.value || !targetInput.value) {
+                    return; // Skip validation if dates are not set
+                }
+                
+                const startDate = new Date(startInput.value);
+                const targetDate = new Date(targetInput.value);
+                
+                if (startDate > targetDate) {
+                    // Add error styling
+                    startInput.classList.add('error');
+                    targetInput.classList.add('error');
+                    startInput.title = 'Start Date must be before Target Date';
+                    targetInput.title = 'Target Date must be after Start Date';
+                } else {
+                    // Remove error styling
+                    startInput.classList.remove('error');
+                    targetInput.classList.remove('error');
+                    startInput.title = '';
+                    targetInput.title = '';
+                }
+            }
+            
+            function setupDateValidationListeners() {
+                const startInput = document.getElementById('edit-start');
+                const targetInput = document.getElementById('edit-target');
+                
+                if (startInput && targetInput) {
+                    startInput.addEventListener('blur', validateMainDatesOnBlur);
+                    targetInput.addEventListener('blur', validateMainDatesOnBlur);
+                }
+            }
 
             // --- MULTI-SELECT HELPERS ---
             let selectedCategories = [];
@@ -2816,6 +2856,33 @@ const loadState = async () => {
                     startInput.onchange = (e) => updatePhase(idx, 'startDate', new Date(e.target.value).toISOString());
                     const endInput = tr.querySelector('.date-safe-end');
                     endInput.onchange = (e) => updatePhase(idx, 'endDate', new Date(e.target.value).toISOString());
+                    
+                    // Add blur validation for phase dates
+                    const validatePhaseDates = () => {
+                        if (!startInput.value || !endInput.value) {
+                            return; // Skip validation if dates are not set
+                        }
+                        
+                        const phaseStartDate = new Date(startInput.value);
+                        const phaseEndDate = new Date(endInput.value);
+                        
+                        if (phaseStartDate > phaseEndDate) {
+                            // Add error styling
+                            startInput.classList.add('error');
+                            endInput.classList.add('error');
+                            startInput.title = 'Phase Start Date must be before End Date';
+                            endInput.title = 'Phase End Date must be after Start Date';
+                        } else {
+                            // Remove error styling
+                            startInput.classList.remove('error');
+                            endInput.classList.remove('error');
+                            startInput.title = 'Phase Start Date';
+                            endInput.title = 'Phase End Date';
+                        }
+                    };
+                    
+                    startInput.addEventListener('blur', validatePhaseDates);
+                    endInput.addEventListener('blur', validatePhaseDates);
 
                     tbody.appendChild(tr);
                 });
