@@ -4808,7 +4808,7 @@ const loadState = async () => {
             }
 
             return {
-                id: issue.key,
+                id: parseInt(issue.id, 10),
                 name: f.summary,
                 owner: f.assignee ? f.assignee.displayName : 'Unassigned',
                 keyInitiative: keyInitiativeVal,
