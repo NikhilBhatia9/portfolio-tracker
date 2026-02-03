@@ -4075,6 +4075,11 @@ const loadState = async () => {
                     initiative.notes = [];
                 }
                 
+                // Also ensure editingCopy has notes array
+                if (!editingCopy.notes) {
+                    editingCopy.notes = [];
+                }
+                
                 const note = {
                     id: Date.now(),
                     text: noteText,
@@ -4083,6 +4088,8 @@ const loadState = async () => {
                 };
                 
                 initiative.notes.push(note);
+                // Also add to editingCopy so it gets saved to DB
+                editingCopy.notes.push(note);
                 noteInput.value = '';
                 
                 // Log activity for note added
