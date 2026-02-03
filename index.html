@@ -1385,7 +1385,7 @@
                 </div>
                 
                 <!-- Portfolio Summary Section (Executive View) -->
-                <div class="card" style="margin-bottom: 2rem; padding: 1.5rem; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);">
+                <div class="card" style="margin-bottom: 2rem; padding: 1.5rem;">
                     <h3 style="margin: 0 0 1rem 0; display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.5rem;">📈</span>
                         Portfolio Summary
@@ -3510,36 +3510,36 @@ const loadState = async () => {
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.5rem;">⏰</span>
                         <div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: ${overdue > 0 ? 'var(--risk-color)' : 'var(--success-color)'};">${overdue}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Overdue</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: ${overdue > 0 ? 'var(--risk-color)' : 'var(--success-color)'};">${overdue}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">Overdue</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.5rem;">📅</span>
                         <div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--accent-color);">${dueThisMonth}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Due This Month</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--accent-color);">${dueThisMonth}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">Due This Month</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.5rem;">🔑</span>
                         <div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--warning-color);">${keyInitiatives}</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Key Initiatives</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--warning-color);">${keyInitiatives}</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">Key Initiatives</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem;">
                         <span style="font-size: 1.5rem;">📊</span>
                         <div>
-                            <div style="font-size: 1.5rem; font-weight: 700; color: var(--purple);">${avgProgress}%</div>
-                            <div style="font-size: 0.75rem; color: var(--text-muted);">Avg Progress</div>
+                            <div style="font-size: 2rem; font-weight: 700; color: var(--purple);">${avgProgress}%</div>
+                            <div style="font-size: 0.875rem; color: var(--text-muted);">Avg Progress</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: center; gap: 0.5rem; grid-column: span 2;">
                         <span style="font-size: 1.5rem;">🎯</span>
                         <div style="flex: 1;">
-                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem;">Lifecycle Distribution</div>
-                            <div style="display: flex; gap: 0.5rem; font-size: 0.8rem;">
+                            <div style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.25rem;">Lifecycle Distribution</div>
+                            <div style="display: flex; gap: 0.5rem; font-size: 0.875rem;">
                                 <span>📋 Planning: <strong>${lifecycleStages['Planning']}</strong></span>
                                 <span>🚀 Execution: <strong>${lifecycleStages['Execution']}</strong></span>
                                 <span>✅ Delivered: <strong>${lifecycleStages['Delivered']}</strong></span>
