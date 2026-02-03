@@ -1900,6 +1900,7 @@ async function getAllInitiativesFromSupabase() {
     if (error) throw error;
     
     // Transform database format to app format and fetch notes for each initiative
+    // TODO: Optimize to avoid N+1 queries by batching note fetches
     const initiatives = await Promise.all(data.map(async (item) => {
         const notes = await getNotesFromSupabase(item.id);
         return {
@@ -2062,6 +2063,7 @@ async function deleteNotesForInitiative(initiativeId) {
         .eq('initiative_id', initiativeId);
     
     // Ignore error if table doesn't exist or no notes found
+    // PGRST116 = PostgREST error code for "no rows found"
     if (error && error.code !== 'PGRST116') {
         console.warn('Failed to delete notes:', error);
     }

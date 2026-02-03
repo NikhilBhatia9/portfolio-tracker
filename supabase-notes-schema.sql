@@ -2,7 +2,7 @@
 -- Run this in your Supabase SQL Editor to create the notes table
 
 CREATE TABLE IF NOT EXISTS notes (
-    id BIGINT PRIMARY KEY,
+    id BIGINT PRIMARY KEY,  -- Note: IDs are generated client-side using Date.now() for uniqueness
     initiative_id BIGINT NOT NULL,
     text TEXT NOT NULL,
     author TEXT NOT NULL,

@@ -24,6 +24,7 @@ BEGIN
             FOR note_record IN SELECT * FROM jsonb_array_elements(init_record.notes)
             LOOP
                 -- Insert into notes table (handle duplicates gracefully)
+                -- Note: JSONB structure uses 'date' field which maps to 'created_at' in database
                 INSERT INTO notes (id, initiative_id, text, author, created_at)
                 VALUES (
                     (note_record->>'id')::BIGINT,
