@@ -1668,9 +1668,10 @@
                 <table style="margin-top: 0; table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
-                            <th style="padding: 0.5rem; width: 22%; text-align: left;">Phase Name</th>
+                            <th style="padding: 0.5rem; width: 4%; text-align: center;"></th>
+                            <th style="padding: 0.5rem; width: 20%; text-align: left;">Phase Name</th>
                             <th style="padding: 0.5rem; width: 8%; text-align: center;">Color</th>
-                            <th style="padding: 0.5rem; width: 40%; text-align: left;">Dates (Start → End)</th>
+                            <th style="padding: 0.5rem; width: 38%; text-align: left;">Dates (Start → End)</th>
                             <th style="padding: 0.5rem; width: 18%; text-align: left;">Status</th>
                             <th style="padding: 0.5rem; width: 12%; text-align: center;">Action</th>
                         </tr>
@@ -2995,6 +2996,62 @@ const loadState = async () => {
                 }
             }
 
+            // Drag and drop functionality for phases
+            let draggedPhaseIndex = null;
+            
+            function handlePhaseDragStart(e, idx) {
+                draggedPhaseIndex = idx;
+                e.currentTarget.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+            }
+            
+            function handlePhaseDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                return false;
+            }
+            
+            function handlePhaseDragEnter(e) {
+                e.currentTarget.classList.add('drag-over');
+            }
+            
+            function handlePhaseDragLeave(e) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+            
+            function handlePhaseDrop(e, idx) {
+                if (e.stopPropagation) {
+                    e.stopPropagation();
+                }
+                
+                e.currentTarget.classList.remove('drag-over');
+                
+                if (draggedPhaseIndex !== null && draggedPhaseIndex !== idx) {
+                    // Reorder the phases array
+                    const draggedPhase = editingCopy.phases[draggedPhaseIndex];
+                    editingCopy.phases.splice(draggedPhaseIndex, 1);
+                    editingCopy.phases.splice(idx, 0, draggedPhase);
+                    
+                    // Re-render the phases list
+                    renderPhases();
+                }
+                
+                return false;
+            }
+            
+            function handlePhaseDragEnd(e) {
+                e.currentTarget.classList.remove('dragging');
+                
+                // Remove drag-over class from all rows
+                const rows = document.querySelectorAll('.phase-row');
+                rows.forEach(row => row.classList.remove('drag-over'));
+                
+                draggedPhaseIndex = null;
+            }
+
             function renderPhases() {
                 const tbody = document.getElementById('phases-list');
                 tbody.innerHTML = '';
@@ -3051,9 +3108,17 @@ const loadState = async () => {
                         tr.classList.add('phase-overdue');
                         tr.dataset.daysOverdue = daysOverdue;
                     }
+                    
+                    // Make row draggable
+                    tr.classList.add('phase-row');
+                    tr.draggable = true;
+                    tr.dataset.phaseIndex = idx;
 
                     tr.innerHTML = `
-                <td style="padding:0.5rem; width: 22%; vertical-align: middle;">
+                <td style="padding:0.5rem; width: 4%; text-align: center; vertical-align: middle;">
+                    <span class="drag-handle" title="Drag to reorder">⠿</span>
+                </td>
+                <td style="padding:0.5rem; width: 20%; vertical-align: middle;">
                     <div style="display: flex; align-items: center; gap: 4px;">
                         ${isOverdue ? '<span style="color: var(--danger-color); font-weight: bold; font-size: 0.9rem; flex-shrink: 0;" title="OVERDUE by ' + daysOverdue + ' day(s)">🚨</span>' : ''}
                         <input class="phase-input" onchange="updatePhase(${idx}, 'name', this.value)" value="${phase.name}" style="width:100%; min-width: 0;">
@@ -3062,7 +3127,7 @@ const loadState = async () => {
                 <td style="padding:0.5rem; width: 8%; text-align: center; vertical-align: middle;">
                     <input type="color" value="${color}" onchange="updatePhase(${idx}, 'color', this.value)" style="width: 50px; height: 35px; cursor: pointer;">
                 </td>
-                <td style="padding:0.5rem; width: 40%; vertical-align: middle;">
+                <td style="padding:0.5rem; width: 38%; vertical-align: middle;">
                     <div style="display:flex; gap:0.5rem; align-items:center;">
                          <div style="flex:1; min-width: 0;">
                              <label style="font-size:0.7rem; color:var(--text-muted); display:block; margin-bottom:2px;">Start</label>
@@ -3117,6 +3182,14 @@ const loadState = async () => {
                     
                     startInput.addEventListener('blur', validatePhaseDates);
                     endInput.addEventListener('blur', validatePhaseDates);
+                    
+                    // Add drag event listeners
+                    tr.addEventListener('dragstart', (e) => handlePhaseDragStart(e, idx));
+                    tr.addEventListener('dragover', handlePhaseDragOver);
+                    tr.addEventListener('dragenter', handlePhaseDragEnter);
+                    tr.addEventListener('dragleave', handlePhaseDragLeave);
+                    tr.addEventListener('drop', (e) => handlePhaseDrop(e, idx));
+                    tr.addEventListener('dragend', handlePhaseDragEnd);
 
                     tbody.appendChild(tr);
                 });
@@ -5160,6 +5233,40 @@ style.textContent = `
     .phase-overdue input,
     .phase-overdue select {
         border-color: var(--danger-color) !important;
+    }
+    
+    /* Phase drag-and-drop styles */
+    .phase-row {
+        transition: all 0.2s ease;
+        cursor: move;
+    }
+    
+    .phase-row.dragging {
+        opacity: 0.5;
+        background: rgba(59, 130, 246, 0.1);
+    }
+    
+    .phase-row.drag-over {
+        border-top: 3px solid var(--accent-color);
+    }
+    
+    .drag-handle {
+        cursor: grab;
+        color: var(--text-muted);
+        font-size: 1rem;
+        padding: 0 0.5rem;
+        user-select: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .drag-handle:active {
+        cursor: grabbing;
+    }
+    
+    .drag-handle:hover {
+        color: var(--accent-color);
     }
 `;
 document.head.appendChild(style);
