@@ -3183,12 +3183,18 @@ const loadState = async () => {
                     startInput.addEventListener('blur', validatePhaseDates);
                     endInput.addEventListener('blur', validatePhaseDates);
                     
-                    // Add drag event listeners
-                    tr.addEventListener('dragstart', (e) => handlePhaseDragStart(e, idx));
+                    // Add drag event listeners - use data attribute to avoid stale closure
+                    tr.addEventListener('dragstart', (e) => {
+                        const phaseIndex = parseInt(e.currentTarget.dataset.phaseIndex);
+                        handlePhaseDragStart(e, phaseIndex);
+                    });
                     tr.addEventListener('dragover', handlePhaseDragOver);
                     tr.addEventListener('dragenter', handlePhaseDragEnter);
                     tr.addEventListener('dragleave', handlePhaseDragLeave);
-                    tr.addEventListener('drop', (e) => handlePhaseDrop(e, idx));
+                    tr.addEventListener('drop', (e) => {
+                        const phaseIndex = parseInt(e.currentTarget.dataset.phaseIndex);
+                        handlePhaseDrop(e, phaseIndex);
+                    });
                     tr.addEventListener('dragend', handlePhaseDragEnd);
 
                     tbody.appendChild(tr);
@@ -5238,7 +5244,6 @@ style.textContent = `
     /* Phase drag-and-drop styles */
     .phase-row {
         transition: all 0.2s ease;
-        cursor: move;
     }
     
     .phase-row.dragging {
